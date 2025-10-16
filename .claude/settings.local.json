@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(tree:*)",
+      "Bash(curl:*)",
+      "Bash(unzip:*)",
+      "Bash(/tmp/gradle-8.5/bin/gradle:*)",
+      "Bash(./gradlew:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: Complete Niox Communication Plugin\n\n- Kotlin Multiplatform library for Bluetooth communication\n- Android implementation using Bluetooth LE API\n- iOS implementation using CoreBluetooth framework\n- Windows implementation using Windows Bluetooth APIs via JNA\n- Full API for checking Bluetooth state and scanning devices\n- Comprehensive documentation and usage examples\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(echo:*)",
+      "Read(//Users/edwinthomas/Library/Android/sdk/**)",
+      "Bash(./build-all.sh:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix build configuration and add completion report\n\n- Add local.properties with Android SDK path configuration\n- Disable Kotlin default hierarchy template to resolve warnings\n- Add comprehensive completion report documenting Windows implementation\n- All platforms now build successfully (Android AAR, iOS XCFramework, Windows JAR)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
