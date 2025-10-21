@@ -5,6 +5,9 @@ plugins {
     id("com.android.library")
 }
 
+// Check if running on Windows
+val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+
 kotlin {
     // Android Target
     androidTarget {
@@ -16,15 +19,17 @@ kotlin {
         publishLibraryVariants("release")
     }
 
-    // iOS Targets
-    val xcf = XCFramework("NioxCommunicationPlugin")
-    listOf(
-        iosArm64(),
-    ).forEach {
-        it.binaries.framework {
-            baseName = "NioxCommunicationPlugin"
-            xcf.add(this)
-            isStatic = true
+    // iOS Targets (only on macOS, not on Windows)
+    if (!isWindows) {
+        val xcf = XCFramework("NioxCommunicationPlugin")
+        listOf(
+            iosArm64(),
+        ).forEach {
+            it.binaries.framework {
+                baseName = "NioxCommunicationPlugin"
+                xcf.add(this)
+                isStatic = true
+            }
         }
     }
 
@@ -56,10 +61,13 @@ kotlin {
             }
         }
 
-        val iosArm64Main by getting
-        val iosMain by creating {
-            dependsOn(commonMain)
-            iosArm64Main.dependsOn(this)
+        // iOS source sets (only on macOS, not on Windows)
+        if (!isWindows) {
+            val iosArm64Main by getting
+            val iosMain by creating {
+                dependsOn(commonMain)
+                iosArm64Main.dependsOn(this)
+            }
         }
 
         // Native Windows source set (no extra deps for stub)
