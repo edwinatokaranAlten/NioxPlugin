@@ -100,6 +100,7 @@ tasks.register<Copy>("buildWindowsNativeDll") {
     // Build must run on Windows host; link task name for mingwX64 shared
     dependsOn("linkReleaseSharedWindowsNative")
     val dllName = "NioxCommunicationPlugin.dll"
+    val buildDir = layout.buildDirectory.get().asFile
     from(file("$buildDir/bin/windowsNative/releaseShared/$dllName"))
     into(file("$buildDir/outputs/windows"))
 }
