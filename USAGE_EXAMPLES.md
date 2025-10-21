@@ -70,21 +70,16 @@ class MainActivity : AppCompatActivity() {
 
         // Scan for devices
         CoroutineScope(Dispatchers.Main).launch {
-            plugin.startBluetoothScan(
-                onDeviceFound = { device ->
-                    Log.d("Bluetooth", "Found: ${device.name} (${device.address})")
-                },
-                onScanComplete = {
-                    Log.d("Bluetooth", "Scan complete")
-                },
-                scanDurationMs = 10000
-            )
+            val devices = plugin.scanForDevices(scanDurationMs = 10_000)
+            devices.forEach { device ->
+                Log.d("Bluetooth", "Found: ${device.name} (${device.address})")
+            }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        plugin.stopBluetoothScan()
+        plugin.stopScan()
     }
 }
 ```
@@ -137,27 +132,21 @@ class ViewController: UIViewController {
 
     func startScanning() {
         Task {
-            await plugin?.startBluetoothScan(
-                onDeviceFound: { [weak self] device in
-                    DispatchQueue.main.async {
-                        self?.discoveredDevices.append(device)
-                        print("Found device: \(device.name ?? "Unknown") - \(device.address)")
-                    }
-                },
-                onScanComplete: {
-                    print("Scan completed. Found \(self.discoveredDevices.count) devices")
-                },
-                scanDurationMs: 10000
-            )
+            if let devices = await plugin?.scanForDevices(scanDurationMs: 10000) {
+                DispatchQueue.main.async {
+                    self.discoveredDevices.append(contentsOf: devices)
+                    print("Scan completed. Found \(devices.count) devices")
+                }
+            }
         }
     }
 
     func stopScanning() {
-        plugin?.stopBluetoothScan()
+        plugin?.stopScan()
     }
 
     deinit {
-        plugin?.stopBluetoothScan()
+        plugin?.stopScan()
     }
 }
 ```
@@ -227,24 +216,19 @@ class BluetoothManager: ObservableObject {
         devices.removeAll()
 
         Task {
-            await plugin?.startBluetoothScan(
-                onDeviceFound: { [weak self] device in
-                    DispatchQueue.main.async {
-                        self?.devices.append(device)
-                    }
-                },
-                onScanComplete: { [weak self] in
-                    DispatchQueue.main.async {
-                        self?.isScanning = false
-                    }
-                },
-                scanDurationMs: 10000
-            )
+            if let result = await plugin?.scanForDevices(scanDurationMs: 10000) {
+                DispatchQueue.main.async {
+                    self.devices = result
+                    self.isScanning = false
+                }
+            } else {
+                DispatchQueue.main.async { self.isScanning = false }
+            }
         }
     }
 
     func stopScan() {
-        plugin?.stopBluetoothScan()
+        plugin?.stopScan()
         isScanning = false
     }
 }
@@ -282,15 +266,10 @@ fun main() = runBlocking {
 
     // Scan for devices
     println("Starting Bluetooth scan...")
-    plugin.startBluetoothScan(
-        onDeviceFound = { device ->
-            println("Found device: ${device.name} - ${device.address} (RSSI: ${device.rssi})")
-        },
-        onScanComplete = {
-            println("Scan completed")
-        },
-        scanDurationMs = 10000
-    )
+    val devices = plugin.scanForDevices(scanDurationMs = 10_000)
+    devices.forEach { device ->
+        println("Found device: ${device.name} - ${device.address} (RSSI: ${device.rssi})")
+    }
 }
 ```
 
@@ -304,10 +283,8 @@ fun main() = runBlocking {
 
 ```kotlin
 try {
-    plugin.startBluetoothScan(
-        onDeviceFound = { device -> /* ... */ },
-        onScanComplete = { /* ... */ }
-    )
+    val devices = plugin.scanForDevices()
+    // use devices
 } catch (e: SecurityException) {
     Log.e("Bluetooth", "Missing permissions", e)
     // Request permissions
@@ -330,7 +307,8 @@ if state == .disabled {
 val state = plugin.checkBluetoothState()
 if (state == BluetoothState.ENABLED) {
     // Safe to scan
-    plugin.startBluetoothScan(...)
+    val devices = plugin.scanForDevices()
+    // use devices
 } else {
     // Handle disabled/unsupported state
 }

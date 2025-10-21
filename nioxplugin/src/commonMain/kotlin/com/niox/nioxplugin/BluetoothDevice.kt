@@ -26,12 +26,16 @@ data class BluetoothDevice(
      */
     fun isNioxDevice(): Boolean {
         // Check if device name matches NIOX pattern
-        val hasNioxName = name?.startsWith("NIOX PRO", ignoreCase = true) == true
+        val hasNioxName = name?.startsWith(NioxConstants.NIOX_DEVICE_NAME_PREFIX, ignoreCase = true) == true
+
+        // Normalize UUID strings (remove hyphens and lowercase) for comparison across platforms
+        fun normalizeUuid(u: String) = u.replace("-", "").lowercase()
+
+        val target = normalizeUuid(NioxConstants.NIOX_SERVICE_UUID)
 
         // Check if device advertises the NIOX FDC service UUID
         val hasNioxService = serviceUuids?.any { uuid ->
-            uuid.equals("000fc00b-8a4-4078-874c-14efbd4b510a", ignoreCase = true) ||
-            uuid.equals("000fc00b8a440788741c14efbd4b510a", ignoreCase = true)
+            normalizeUuid(uuid) == target
         } == true
 
         return hasNioxName || hasNioxService
@@ -53,15 +57,5 @@ data class BluetoothDevice(
 }
 
 /**
- * NIOX device identification constants
+ * NIOX device identification constants moved to NioxConstants.kt
  */
-object NioxConstants {
-    /** NIOX FDC Service UUID (128-bit) */
-    const val NIOX_SERVICE_UUID = "000fc00-b8a4-4078-874c-14efbd4b510a"
-
-    /** Tx Power Service UUID (16-bit) */
-    const val TX_POWER_SERVICE_UUID = "1804"
-
-    /** NIOX device name prefix */
-    const val NIOX_DEVICE_NAME_PREFIX = "NIOX PRO"
-}

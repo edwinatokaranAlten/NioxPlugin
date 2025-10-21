@@ -28,10 +28,12 @@ kotlin {
         }
     }
 
-    // Windows Target (JVM-based for now, native Windows support is limited)
-    jvm("windows") {
-        compilations.all {
-            kotlinOptions.jvmTarget = "11"
+    // Windows Native Target (builds a DLL via Kotlin/Native)
+    mingwX64("windowsNative") {
+        binaries {
+            sharedLib {
+                baseName = "NioxCommunicationPlugin"
+            }
         }
     }
 
@@ -60,12 +62,8 @@ kotlin {
             iosArm64Main.dependsOn(this)
         }
 
-        val windowsMain by getting {
-            dependencies {
-                implementation("net.java.dev.jna:jna:5.13.0")
-                implementation("net.java.dev.jna:jna-platform:5.13.0")
-            }
-        }
+        // Native Windows source set (no extra deps for stub)
+        val windowsNativeMain by getting
     }
 }
 
@@ -89,11 +87,11 @@ android {
     }
 }
 
-// Task to build Windows DLL (JAR-based library)
-tasks.register<Jar>("buildWindowsDll") {
-    dependsOn("windowsJar")
-    archiveBaseName.set("niox-communication-plugin-windows")
-    archiveExtension.set("jar")
-    from(tasks.getByName<Jar>("windowsJar").archiveFile)
-    destinationDirectory.set(file("$buildDir/outputs/windows"))
+// Task to copy native Windows DLL into outputs directory
+tasks.register<Copy>("buildWindowsNativeDll") {
+    // Build must run on Windows host; link task name for mingwX64 shared
+    dependsOn("linkReleaseSharedWindowsNative")
+    val dllName = "NioxCommunicationPlugin.dll"
+    from(file("$buildDir/bin/windowsNative/releaseShared/$dllName"))
+    into(file("$buildDir/outputs/windows"))
 }

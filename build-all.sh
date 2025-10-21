@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build script for Niox Communication Plugin
-# Generates AAR, XCFramework, and Windows JAR
+# Generates AAR, XCFramework, and Windows DLL
 
 echo "========================================="
 echo "Building Niox Communication Plugin"
@@ -40,16 +40,21 @@ else
     echo "⚠ Skipping iOS XCFramework build (macOS required)"
 fi
 
-# Build Windows JAR
-echo ""
-echo "Building Windows JAR..."
-./gradlew :nioxplugin:buildWindowsDll
+# Build Windows Native DLL (only on Windows hosts)
+if [[ "$OS" == "Windows_NT" || "$OSTYPE" == msys || "$OSTYPE" == cygwin || "$OSTYPE" == win* ]]; then
+    echo ""
+    echo "Building Windows Native DLL..."
+    ./gradlew :nioxplugin:buildWindowsNativeDll
 
-if [ $? -eq 0 ]; then
-    echo "✓ Windows JAR built successfully"
-    echo "  Location: nioxplugin/build/outputs/windows/niox-communication-plugin-windows.jar"
+    if [ $? -eq 0 ]; then
+        echo "✓ Windows DLL built successfully"
+        echo "  Location: nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll"
+    else
+        echo "✗ Windows DLL build failed"
+    fi
 else
-    echo "✗ Windows JAR build failed"
+    echo ""
+    echo "⚠ Skipping Windows DLL build (requires Windows host)"
 fi
 
 echo ""

@@ -67,15 +67,24 @@ Output: `nioxplugin/build/outputs/aar/nioxplugin-release.aar`
 
 Output: `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework`
 
-### Build Windows Library
+### Build Windows Libraries
 
+JAR (JVM-based implementation):
 ```bash
 ./gradlew :nioxplugin:buildWindowsDll
 ```
-
 Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows.jar`
 
-Note: Windows implementation uses JVM target and JNA for Windows API access.
+DLL (Native, requires Windows host):
+```bash
+./gradlew :nioxplugin:buildWindowsNativeDll
+```
+Output: `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
+
+Notes:
+- JAR uses JVM + JNA and includes functional scanning via classic Windows Bluetooth APIs.
+- DLL is a Kotlin/Native stub target to provide a native artifact; BLE scanning is not implemented in the DLL yet.
+- Building the DLL requires a Windows host with the Windows 10/11 SDK installed (for `BluetoothAPIs.h` and `Bthprops`).
 
 ## Usage
 
@@ -86,12 +95,11 @@ All platforms share the same API defined in `NioxCommunicationPlugin` interface:
 ```kotlin
 interface NioxCommunicationPlugin {
     suspend fun checkBluetoothState(): BluetoothState
-    suspend fun startBluetoothScan(
-        onDeviceFound: (BluetoothDevice) -> Unit,
-        onScanComplete: () -> Unit = {},
-        scanDurationMs: Long = 10000
-    )
-    fun stopBluetoothScan()
+    suspend fun scanForDevices(
+        scanDurationMs: Long = 10000,
+        serviceUuidFilter: String? = NioxConstants.NIOX_SERVICE_UUID
+    ): List<BluetoothDevice>
+    fun stopScan()
 }
 ```
 
@@ -168,15 +176,13 @@ Task {
 
 // Scan for devices
 Task {
-    await plugin.startBluetoothScan(
-        onDeviceFound: { device in
-            print("Found device: \(device.name ?? "Unknown") - \(device.address)")
-        },
-        onScanComplete: {
-            print("Scan completed")
-        },
-        scanDurationMs: 10000
+    let devices = await plugin.scanForDevices(
+        scanDurationMs: 10000,
+        serviceUuidFilter: NioxConstants.shared.NIOX_SERVICE_UUID
     )
+    devices.forEach { device in
+        print("Found device: \(device.name ?? \"Unknown\") - \(device.address)")
+    }
 }
 ```
 
@@ -200,15 +206,11 @@ val plugin = createNioxCommunicationPlugin()
 // Check Bluetooth state
 val state = plugin.checkBluetoothState()
 
-// Scan for devices (same API as other platforms)
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        println("Found device: ${device.name} - ${device.address}")
-    },
-    onScanComplete = {
-        println("Scan completed")
-    }
-)
+// Scan for devices (returns list)
+val devices = plugin.scanForDevices(scanDurationMs = 10000)
+devices.forEach { device ->
+    println("Found device: ${device.name} - ${device.address}")
+}
 ```
 
 ## API Reference

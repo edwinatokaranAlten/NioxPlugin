@@ -12,6 +12,7 @@ This will generate:
 - Android AAR: `nioxplugin/build/outputs/aar/nioxplugin-release.aar`
 - iOS XCFramework: `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework`
 - Windows JAR: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows.jar`
+- Windows DLL (Windows host): `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
 
 ### Option 2: Build Individual Targets
 
@@ -28,6 +29,11 @@ This will generate:
 **Windows JAR:**
 ```bash
 ./gradlew :nioxplugin:buildWindowsDll
+```
+
+**Windows DLL (Native, Windows host):**
+```bash
+./gradlew :nioxplugin:buildWindowsNativeDll
 ```
 
 ## Integration
@@ -71,18 +77,14 @@ This will generate:
 // Check Bluetooth state
 val state = plugin.checkBluetoothState()
 
-// Scan for devices
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        println("Found: ${device.name} - ${device.address}")
-    },
-    onScanComplete = {
-        println("Scan complete")
-    }
-)
+// Scan for devices and get results
+val devices = plugin.scanForDevices(scanDurationMs = 10_000)
+devices.forEach { device ->
+    println("Found: ${device.name} - ${device.address}")
+}
 
-// Stop scanning
-plugin.stopBluetoothScan()
+// Stop scanning early if needed
+plugin.stopScan()
 ```
 
 ## Next Steps

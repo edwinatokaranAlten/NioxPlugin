@@ -16,7 +16,10 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nFix build configuration and add completion report\n\n- Add local.properties with Android SDK path configuration\n- Disable Kotlin default hierarchy template to resolve warnings\n- Add comprehensive completion report documenting Windows implementation\n- All platforms now build successfully (Android AAR, iOS XCFramework, Windows JAR)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git remote set-url:*)",
+      "Read(//Users/edwinthomas/.ssh/**)",
+      "Bash(ssh-add:*)"
     ],
     "deny": [],
     "ask": []
