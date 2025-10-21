@@ -5,13 +5,25 @@ Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host "Building Niox Communication Plugin (Windows)" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 
+# Determine which Gradle command to use
+if (Test-Path ".\gradlew.bat" -PathType Leaf) {
+    $GRADLE_CMD = ".\gradlew.bat"
+} elseif (Get-Command gradle -ErrorAction SilentlyContinue) {
+    $GRADLE_CMD = "gradle"
+} else {
+    Write-Host "❌ Error: Neither gradlew.bat nor gradle command found" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Using Gradle: $GRADLE_CMD" -ForegroundColor Gray
+
 # Clean previous builds
 Write-Host "`nCleaning previous builds..." -ForegroundColor Yellow
-& .\gradlew.bat clean
+& $GRADLE_CMD clean
 
 # Build Android AAR
 Write-Host "`nBuilding Android AAR..." -ForegroundColor Yellow
-& .\gradlew.bat :nioxplugin:assembleRelease
+& $GRADLE_CMD :nioxplugin:assembleRelease
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✓ Android AAR built successfully" -ForegroundColor Green
@@ -22,7 +34,7 @@ if ($LASTEXITCODE -eq 0) {
 
 # Build Windows Native DLL
 Write-Host "`nBuilding Windows Native DLL..." -ForegroundColor Yellow
-& .\gradlew.bat :nioxplugin:buildWindowsNativeDll
+& $GRADLE_CMD :nioxplugin:buildWindowsNativeDll
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✓ Windows DLL built successfully" -ForegroundColor Green

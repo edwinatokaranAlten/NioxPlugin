@@ -7,14 +7,26 @@ echo "========================================="
 echo "Building Niox Communication Plugin (macOS)"
 echo "========================================="
 
+# Use system Gradle if wrapper is not available
+if [ -f "./gradlew" ] && [ -x "./gradlew" ]; then
+    GRADLE_CMD="./gradlew"
+elif command -v gradle &> /dev/null; then
+    GRADLE_CMD="gradle"
+else
+    echo "❌ Error: Neither gradlew nor gradle command found"
+    exit 1
+fi
+
+echo "Using Gradle: $GRADLE_CMD"
+
 # Clean previous builds
 echo "Cleaning previous builds..."
-./gradlew clean
+$GRADLE_CMD clean
 
 # Build Android AAR
 echo ""
 echo "Building Android AAR..."
-./gradlew :nioxplugin:assembleRelease
+$GRADLE_CMD :nioxplugin:assembleRelease
 
 if [ $? -eq 0 ]; then
     echo "✓ Android AAR built successfully"
@@ -27,7 +39,7 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo ""
     echo "Building iOS XCFramework..."
-    ./gradlew :nioxplugin:assembleNioxCommunicationPluginXCFramework
+    $GRADLE_CMD :nioxplugin:assembleNioxCommunicationPluginXCFramework
 
     if [ $? -eq 0 ]; then
         echo "✓ iOS XCFramework built successfully"
