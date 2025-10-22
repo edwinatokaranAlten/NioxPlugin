@@ -69,22 +69,24 @@ Output: `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframewo
 
 ### Build Windows Libraries
 
-JAR (JVM-based implementation):
+**JAR (JVM-based implementation - RECOMMENDED):**
 ```bash
-./gradlew :nioxplugin:buildWindowsDll
+./gradlew :nioxplugin:buildWindowsJar
 ```
-Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows.jar`
+Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows-1.0.0.jar`
 
-DLL (Native, requires Windows host):
+**DLL (Native stub - limited functionality):**
 ```bash
 ./gradlew :nioxplugin:buildWindowsNativeDll
 ```
 Output: `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
 
-Notes:
-- JAR uses JVM + JNA and includes functional scanning via classic Windows Bluetooth APIs.
-- DLL is a Kotlin/Native stub target to provide a native artifact; BLE scanning is not implemented in the DLL yet.
-- Building the DLL requires a Windows host with the Windows 10/11 SDK installed (for `BluetoothAPIs.h` and `Bthprops`).
+**Notes:**
+- **JAR**: Full implementation using JVM + JNA with functional Bluetooth scanning via Windows Bluetooth APIs. **Use this for production.**
+- **DLL**: Kotlin/Native stub that always returns `UNSUPPORTED` state. Not functional for Bluetooth operations.
+- The JAR can be used from C# MAUI applications (see [CSHARP_MAUI_INTEGRATION.md](CSHARP_MAUI_INTEGRATION.md))
+- Building the JAR requires JDK 11+
+- Building the DLL requires a Windows host with mingw-w64 toolchain
 
 ## Usage
 
@@ -250,9 +252,15 @@ data class BluetoothDevice(
 - Works on iOS 13.0+
 
 ### Windows
-- Uses JNA to access Windows Bluetooth APIs
-- Simplified implementation - full native support requires additional Windows API bindings
-- Works on Windows 10+
+- **JAR Implementation (Recommended)**: Full Bluetooth scanning using JNA to access Windows Bluetooth Classic APIs
+- Supports checking Bluetooth adapter state (enabled/disabled/unsupported)
+- Supports device scanning with duration control and NIOX device filtering
+- Uses `Bthprops.cpl` (Windows Bluetooth API) for device enumeration
+- RSSI (signal strength) is not available on Windows Bluetooth Classic API
+- Requires JRE 11+ to run
+- Works on Windows 10/11 with Bluetooth hardware
+- Can be integrated into C# MAUI applications (see [CSHARP_MAUI_INTEGRATION.md](CSHARP_MAUI_INTEGRATION.md))
+- **DLL Implementation**: Native stub only, not functional for Bluetooth operations
 
 ## License
 

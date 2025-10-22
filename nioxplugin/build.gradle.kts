@@ -33,7 +33,16 @@ kotlin {
         }
     }
 
-    // Windows Native Target (builds a DLL via Kotlin/Native)
+    // Windows JVM Target (builds a JAR with JNA for actual Bluetooth functionality)
+    jvm("windows") {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "11"
+            }
+        }
+    }
+
+    // Windows Native Target (builds a DLL via Kotlin/Native - stub only)
     mingwX64("windowsNative") {
         binaries {
             sharedLib {
@@ -70,6 +79,14 @@ kotlin {
             }
         }
 
+        // JVM Windows source set (with JNA for Bluetooth)
+        val windowsMain by getting {
+            dependencies {
+                implementation("net.java.dev.jna:jna:5.13.0")
+                implementation("net.java.dev.jna:jna-platform:5.13.0")
+            }
+        }
+
         // Native Windows source set (no extra deps for stub)
         val windowsNativeMain by getting
     }
@@ -95,7 +112,26 @@ android {
     }
 }
 
-// Task to copy native Windows DLL into outputs directory
+// Task to build Windows JVM JAR with all dependencies
+tasks.register<Jar>("buildWindowsJar") {
+    dependsOn("windowsJar")
+    archiveBaseName.set("niox-communication-plugin-windows")
+    archiveVersion.set(version.toString())
+    from(tasks.named("windowsJar"))
+
+    // Copy to outputs directory
+    doLast {
+        val buildDir = layout.buildDirectory.get().asFile
+        val outputDir = file("$buildDir/outputs/windows")
+        outputDir.mkdirs()
+        copy {
+            from(archiveFile.get().asFile)
+            into(outputDir)
+        }
+    }
+}
+
+// Task to copy native Windows DLL into outputs directory (stub only)
 tasks.register<Copy>("buildWindowsNativeDll") {
     // Build must run on Windows host; link task name for mingwX64 shared
     dependsOn("linkReleaseSharedWindowsNative")
