@@ -35,7 +35,7 @@ NIOX PRO devices can be identified by:
 
 ### Option 1: Default NIOX Scan (Recommended)
 
-**The simplest way** - just call `startBluetoothScan()` without parameters. It automatically scans for NIOX devices only.
+**The simplest way** - just call `scanForDevices()` without parameters. It automatically scans for NIOX devices only.
 
 #### Android Example
 
@@ -45,29 +45,24 @@ import com.niox.nioxplugin.*
 val plugin = createNioxCommunicationPlugin(context)
 
 // Scan for NIOX devices - UUID filter applied by default!
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        println("Found NIOX device: ${device.name}")
-        println("Serial number: ${device.getNioxSerialNumber()}")
-        println("Address: ${device.address}")
-        println("RSSI: ${device.rssi} dBm")
-        println("Service UUIDs: ${device.serviceUuids}")
-    },
-    onScanComplete = {
-        println("NIOX scan completed")
-    }
-)
+val devices = plugin.scanForDevices()
+devices.forEach { device ->
+    println("Found NIOX device: ${device.name}")
+    println("Serial number: ${device.getNioxSerialNumber()}")
+    println("Address: ${device.address}")
+    println("RSSI: ${device.rssi} dBm")
+    println("Service UUIDs: ${device.serviceUuids}")
+}
 
 // Or explicitly specify the UUID (same as default)
-plugin.startBluetoothScan(
-    onDeviceFound = { device -> /* ... */ },
+val nioxDevices = plugin.scanForDevices(
     scanDurationMs = 10000,
     serviceUuidFilter = NioxConstants.NIOX_SERVICE_UUID
 )
 
 // To scan for ALL devices, set filter to null
-plugin.startBluetoothScan(
-    onDeviceFound = { device -> /* ... */ },
+val allDevices = plugin.scanForDevices(
+    scanDurationMs = 10000,
     serviceUuidFilter = null  // Scan all Bluetooth devices
 )
 ```
@@ -81,19 +76,15 @@ let plugin = NioxCommunicationPluginKt.createNioxCommunicationPlugin()
 
 // Default scan - NIOX devices only (UUID filter applied automatically)
 Task {
-    await plugin.startBluetoothScan(
-        onDeviceFound: { device in
-            print("Found NIOX device: \(device.name ?? "Unknown")")
-            if let serialNumber = device.getNioxSerialNumber() {
-                print("Serial number: \(serialNumber)")
-            }
-            print("Address: \(device.address)")
-            print("RSSI: \(device.rssi ?? 0) dBm")
-        },
-        onScanComplete: {
-            print("NIOX scan completed")
+    let devices = await plugin.scanForDevices()
+    devices.forEach { device in
+        print("Found NIOX device: \(device.name ?? \"Unknown\")")
+        if let serialNumber = device.getNioxSerialNumber() {
+            print("Serial number: \(serialNumber)")
         }
-    )
+        print("Address: \(device.address)")
+        print("RSSI: \(device.rssi ?? 0) dBm")
+    }
 }
 ```
 
@@ -106,17 +97,13 @@ val plugin = createNioxCommunicationPlugin()
 
 // Default scan - automatically filters for NIOX devices
 // Note: Windows uses software filtering by device name
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        println("Found NIOX device: ${device.name}")
-        device.getNioxSerialNumber()?.let { serial ->
-            println("Serial number: $serial")
-        }
-    },
-    onScanComplete = {
-        println("NIOX scan completed")
+val devicesWin = plugin.scanForDevices()
+devicesWin.forEach { device ->
+    println("Found NIOX device: ${device.name}")
+    device.getNioxSerialNumber()?.let { serial ->
+        println("Serial number: $serial")
     }
-)
+}
 ```
 
 ### Option 2: Scan All Devices with Software Filtering
@@ -131,43 +118,39 @@ val plugin = createNioxCommunicationPlugin(context)  // Android requires context
 val nioxDevices = mutableListOf<BluetoothDevice>()
 
 // Scan ALL devices by setting serviceUuidFilter to null
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        // Check if this is a NIOX device using software filtering
-        if (device.isNioxDevice()) {
-            nioxDevices.add(device)
-
-            println("✓ NIOX Device Found!")
-            println("  Name: ${device.name}")
-            println("  Serial: ${device.getNioxSerialNumber()}")
-            println("  Address: ${device.address}")
-            println("  RSSI: ${device.rssi} dBm")
-
-            // Check service UUIDs
-            device.serviceUuids?.let { uuids ->
-                println("  Services: ${uuids.joinToString()}")
-            }
-
-            // Check advertising data
-            device.advertisingData?.let { data ->
-                println("  Tx Power: ${data["txPowerLevel"]}")
-                println("  Flags: ${data["flags"]}")
-            }
-        } else {
-            println("Non-NIOX device: ${device.name}")
-        }
-    },
-    onScanComplete = {
-        println("\n=== Scan Complete ===")
-        println("Found ${nioxDevices.size} NIOX devices")
-
-        nioxDevices.forEach { device ->
-            println("- ${device.name} (${device.getNioxSerialNumber()})")
-        }
-    },
+val allFound = plugin.scanForDevices(
     scanDurationMs = 15000,
     serviceUuidFilter = null  // ← Scan ALL devices
 )
+allFound.forEach { device ->
+    if (device.isNioxDevice()) {
+        nioxDevices.add(device)
+
+        println("✓ NIOX Device Found!")
+        println("  Name: ${device.name}")
+        println("  Serial: ${device.getNioxSerialNumber()}")
+        println("  Address: ${device.address}")
+        println("  RSSI: ${device.rssi} dBm")
+
+        device.serviceUuids?.let { uuids ->
+            println("  Services: ${uuids.joinToString()}")
+        }
+
+        device.advertisingData?.let { data ->
+            println("  Tx Power: ${data["txPowerLevel"]}")
+            println("  Flags: ${data["flags"]}")
+        }
+    } else {
+        println("Non-NIOX device: ${device.name}")
+    }
+}
+
+println("\n=== Scan Complete ===")
+println("Found ${nioxDevices.size} NIOX devices")
+
+nioxDevices.forEach { device ->
+    println("- ${device.name} (${device.getNioxSerialNumber()})")
+}
 ```
 
 ### Option 3: Name-Based Filtering
@@ -177,18 +160,13 @@ Filter by device name prefix only (less reliable if advertising data is truncate
 ```kotlin
 import com.niox.nioxplugin.*
 
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        // Check if device name starts with "NIOX PRO"
-        if (device.name?.startsWith(NioxConstants.NIOX_DEVICE_NAME_PREFIX) == true) {
-            val serialNumber = device.getNioxSerialNumber()
-            println("NIOX PRO found: $serialNumber")
-        }
-    },
-    onScanComplete = {
-        println("Scan finished")
+val devicesByName = plugin.scanForDevices()
+devicesByName.forEach { device ->
+    if (device.name?.startsWith(NioxConstants.NIOX_DEVICE_NAME_PREFIX) == true) {
+        val serialNumber = device.getNioxSerialNumber()
+        println("NIOX PRO found: $serialNumber")
     }
-)
+}
 ```
 
 ## Utility Functions
@@ -256,50 +234,27 @@ NioxConstants.NIOX_DEVICE_NAME_PREFIX     // "NIOX PRO"
 ```kotlin
 class NioxDeviceManager(context: Context) {
     private val plugin = createNioxCommunicationPlugin(context)
-    private val discoveredDevices = mutableMapOf<String, BluetoothDevice>()
 
-    fun scanForNioxDevices(
-        onDeviceFound: (device: BluetoothDevice, serialNumber: String) -> Unit,
-        onComplete: (devices: List<BluetoothDevice>) -> Unit
-    ) {
-        discoveredDevices.clear()
-
-        plugin.startBluetoothScan(
-            onDeviceFound = { device ->
-                if (device.isNioxDevice()) {
-                    val serial = device.getNioxSerialNumber() ?: "Unknown"
-
-                    // Avoid duplicates by address
-                    if (!discoveredDevices.containsKey(device.address)) {
-                        discoveredDevices[device.address] = device
-                        onDeviceFound(device, serial)
-                    }
-                }
-            },
-            onScanComplete = {
-                onComplete(discoveredDevices.values.toList())
-            },
+    suspend fun scanForNioxDevices(): List<BluetoothDevice> {
+        val devices = plugin.scanForDevices(
             scanDurationMs = 10000,
             serviceUuidFilter = NioxConstants.NIOX_SERVICE_UUID
         )
+        return devices.filter { it.isNioxDevice() }
     }
 
     fun stopScanning() {
-        plugin.stopBluetoothScan()
+        plugin.stopScan()
     }
 }
 
-// Usage
+// Usage (in a coroutine scope)
 val manager = NioxDeviceManager(context)
-
-manager.scanForNioxDevices(
-    onDeviceFound = { device, serial ->
-        println("Discovered NIOX device: $serial (RSSI: ${device.rssi} dBm)")
-    },
-    onComplete = { devices ->
-        println("Total NIOX devices found: ${devices.size}")
-    }
-)
+val nioxDevices = manager.scanForNioxDevices()
+println("Total NIOX devices found: ${nioxDevices.size}")
+nioxDevices.forEach { device ->
+    println("Discovered NIOX device: ${device.getNioxSerialNumber()} (RSSI: ${device.rssi} dBm)")
+}
 ```
 
 ## Troubleshooting

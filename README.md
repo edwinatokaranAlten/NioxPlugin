@@ -67,15 +67,26 @@ Output: `nioxplugin/build/outputs/aar/nioxplugin-release.aar`
 
 Output: `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework`
 
-### Build Windows Library
+### Build Windows Libraries
 
+**JAR (JVM-based implementation - RECOMMENDED):**
 ```bash
-./gradlew :nioxplugin:buildWindowsDll
+./gradlew :nioxplugin:buildWindowsJar
 ```
+Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows-1.0.0.jar`
 
-Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows.jar`
+**DLL (Native stub - limited functionality):**
+```bash
+./gradlew :nioxplugin:buildWindowsNativeDll
+```
+Output: `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
 
-Note: Windows implementation uses JVM target and JNA for Windows API access.
+**Notes:**
+- **JAR**: Full implementation using JVM + JNA with functional Bluetooth scanning via Windows Bluetooth APIs. **Use this for production.**
+- **DLL**: Kotlin/Native stub that always returns `UNSUPPORTED` state. Not functional for Bluetooth operations.
+- The JAR can be used from C# MAUI applications (see [CSHARP_MAUI_INTEGRATION.md](CSHARP_MAUI_INTEGRATION.md))
+- Building the JAR requires JDK 11+
+- Building the DLL requires a Windows host with mingw-w64 toolchain
 
 ## Usage
 
@@ -86,12 +97,11 @@ All platforms share the same API defined in `NioxCommunicationPlugin` interface:
 ```kotlin
 interface NioxCommunicationPlugin {
     suspend fun checkBluetoothState(): BluetoothState
-    suspend fun startBluetoothScan(
-        onDeviceFound: (BluetoothDevice) -> Unit,
-        onScanComplete: () -> Unit = {},
-        scanDurationMs: Long = 10000
-    )
-    fun stopBluetoothScan()
+    suspend fun scanForDevices(
+        scanDurationMs: Long = 10000,
+        serviceUuidFilter: String? = NioxConstants.NIOX_SERVICE_UUID
+    ): List<BluetoothDevice>
+    fun stopScan()
 }
 ```
 
@@ -168,15 +178,13 @@ Task {
 
 // Scan for devices
 Task {
-    await plugin.startBluetoothScan(
-        onDeviceFound: { device in
-            print("Found device: \(device.name ?? "Unknown") - \(device.address)")
-        },
-        onScanComplete: {
-            print("Scan completed")
-        },
-        scanDurationMs: 10000
+    let devices = await plugin.scanForDevices(
+        scanDurationMs: 10000,
+        serviceUuidFilter: NioxConstants.shared.NIOX_SERVICE_UUID
     )
+    devices.forEach { device in
+        print("Found device: \(device.name ?? \"Unknown\") - \(device.address)")
+    }
 }
 ```
 
@@ -200,15 +208,11 @@ val plugin = createNioxCommunicationPlugin()
 // Check Bluetooth state
 val state = plugin.checkBluetoothState()
 
-// Scan for devices (same API as other platforms)
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        println("Found device: ${device.name} - ${device.address}")
-    },
-    onScanComplete = {
-        println("Scan completed")
-    }
-)
+// Scan for devices (returns list)
+val devices = plugin.scanForDevices(scanDurationMs = 10000)
+devices.forEach { device ->
+    println("Found device: ${device.name} - ${device.address}")
+}
 ```
 
 ## API Reference
@@ -248,9 +252,15 @@ data class BluetoothDevice(
 - Works on iOS 13.0+
 
 ### Windows
-- Uses JNA to access Windows Bluetooth APIs
-- Simplified implementation - full native support requires additional Windows API bindings
-- Works on Windows 10+
+- **JAR Implementation (Recommended)**: Full Bluetooth scanning using JNA to access Windows Bluetooth Classic APIs
+- Supports checking Bluetooth adapter state (enabled/disabled/unsupported)
+- Supports device scanning with duration control and NIOX device filtering
+- Uses `Bthprops.cpl` (Windows Bluetooth API) for device enumeration
+- RSSI (signal strength) is not available on Windows Bluetooth Classic API
+- Requires JRE 11+ to run
+- Works on Windows 10/11 with Bluetooth hardware
+- Can be integrated into C# MAUI applications (see [CSHARP_MAUI_INTEGRATION.md](CSHARP_MAUI_INTEGRATION.md))
+- **DLL Implementation**: Native stub only, not functional for Bluetooth operations
 
 ## License
 

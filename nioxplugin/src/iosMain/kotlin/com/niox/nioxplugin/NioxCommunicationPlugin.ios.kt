@@ -12,32 +12,35 @@ import kotlin.coroutines.suspendCoroutine
  */
 class IosNioxCommunicationPlugin : NioxCommunicationPlugin {
 
+    private var activeCentralManager: CBCentralManager? = null
+    private var activeScanJob: Job? = null
+
     override suspend fun checkBluetoothState(): BluetoothState = suspendCoroutine { continuation ->
+        var resumed = false
+
+        fun mapState(state: CBManagerState): BluetoothState = when (state) {
+            CBManagerStatePoweredOn -> BluetoothState.ENABLED
+            CBManagerStatePoweredOff -> BluetoothState.DISABLED
+            CBManagerStateUnsupported -> BluetoothState.UNSUPPORTED
+            CBManagerStateUnauthorized -> BluetoothState.DISABLED
+            else -> BluetoothState.UNKNOWN
+        }
+
         val delegate = object : NSObject(), CBCentralManagerDelegateProtocol {
             override fun centralManagerDidUpdateState(central: CBCentralManager) {
-                val state = when (central.state) {
-                    CBManagerStatePoweredOn -> BluetoothState.ENABLED
-                    CBManagerStatePoweredOff -> BluetoothState.DISABLED
-                    CBManagerStateUnsupported -> BluetoothState.UNSUPPORTED
-                    CBManagerStateUnauthorized -> BluetoothState.DISABLED
-                    else -> BluetoothState.UNKNOWN
-                }
-                continuation.resume(state)
+                if (resumed) return
+                resumed = true
+                continuation.resume(mapState(central.state))
             }
         }
 
         val manager = CBCentralManager(delegate = delegate, queue = null)
 
-        // If already initialized, return state immediately
-        if (manager.state != CBManagerStateUnknown) {
-            val state = when (manager.state) {
-                CBManagerStatePoweredOn -> BluetoothState.ENABLED
-                CBManagerStatePoweredOff -> BluetoothState.DISABLED
-                CBManagerStateUnsupported -> BluetoothState.UNSUPPORTED
-                CBManagerStateUnauthorized -> BluetoothState.DISABLED
-                else -> BluetoothState.UNKNOWN
-            }
-            continuation.resume(state)
+        // If already initialized, return state immediately; otherwise wait for delegate callback
+        val current = manager.state
+        if (current != CBManagerStateUnknown && !resumed) {
+            resumed = true
+            continuation.resume(mapState(current))
         }
     }
 
@@ -72,16 +75,29 @@ class IosNioxCommunicationPlugin : NioxCommunicationPlugin {
                     options = null
                 )
 
+                // Store references for potential stopping
+                activeCentralManager = centralManager
+
                 // Stop scan after duration
                 scanJob = CoroutineScope(Dispatchers.Default).launch {
                     delay(scanDurationMs)
                     centralManager?.stopScan()
+                    activeCentralManager = null
+                    activeScanJob = null
                     continuation.resume(discoveredDevices.values.toList())
                 }
+                activeScanJob = scanJob
             }
 
             centralManager = CBCentralManager(delegate = bluetoothDelegate, queue = null)
         }
+    }
+
+    override fun stopScan() {
+        activeScanJob?.cancel()
+        activeCentralManager?.stopScan()
+        activeCentralManager = null
+        activeScanJob = null
     }
 
     private class BluetoothDelegate(

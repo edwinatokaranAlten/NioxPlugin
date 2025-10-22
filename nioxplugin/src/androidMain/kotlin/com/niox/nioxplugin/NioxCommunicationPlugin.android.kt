@@ -28,6 +28,7 @@ class AndroidNioxCommunicationPlugin(private val context: Context) : NioxCommuni
     private var bluetoothLeScanner: BluetoothLeScanner? = bluetoothAdapter?.bluetoothLeScanner
 
     private var currentScanCallback: ScanCallback? = null
+    private var currentHandler: android.os.Handler? = null
 
     override suspend fun checkBluetoothState(): BluetoothState {
         return when {
@@ -109,23 +110,31 @@ class AndroidNioxCommunicationPlugin(private val context: Context) : NioxCommuni
             currentScanCallback = scanCallback
 
             try {
-                // If service UUID filter is provided, use it
+                // If service UUID filter is provided, use it (defensively handle malformed UUID)
                 if (serviceUuidFilter != null) {
-                    val scanFilters = listOf(
-                        android.bluetooth.le.ScanFilter.Builder()
-                            .setServiceUuid(android.os.ParcelUuid.fromString(serviceUuidFilter))
+                    try {
+                        val scanFilters = listOf(
+                            android.bluetooth.le.ScanFilter.Builder()
+                                .setServiceUuid(android.os.ParcelUuid.fromString(serviceUuidFilter))
+                                .build()
+                        )
+                        val scanSettings = android.bluetooth.le.ScanSettings.Builder()
+                            .setScanMode(android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY)
                             .build()
-                    )
-                    val scanSettings = android.bluetooth.le.ScanSettings.Builder()
-                        .setScanMode(android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY)
-                        .build()
-                    scanner.startScan(scanFilters, scanSettings, scanCallback)
+                        scanner.startScan(scanFilters, scanSettings, scanCallback)
+                    } catch (e: IllegalArgumentException) {
+                        // Fallback to unfiltered scan if UUID is malformed
+                        scanner.startScan(scanCallback)
+                    }
                 } else {
                     scanner.startScan(scanCallback)
                 }
 
                 // Schedule scan stop after duration
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                currentHandler = handler
+
+                val stopRunnable = Runnable {
                     try {
                         if (hasBluetoothScanPermission()) {
                             scanner.stopScan(scanCallback)
@@ -134,11 +143,15 @@ class AndroidNioxCommunicationPlugin(private val context: Context) : NioxCommuni
                         // Ignore
                     } finally {
                         currentScanCallback = null
+                        currentHandler = null
                         continuation.resume(discoveredDevices.values.toList())
                     }
-                }, scanDurationMs)
+                }
+
+                handler.postDelayed(stopRunnable, scanDurationMs)
 
                 continuation.invokeOnCancellation {
+                    handler.removeCallbacks(stopRunnable)
                     try {
                         if (hasBluetoothScanPermission()) {
                             scanner.stopScan(scanCallback)
@@ -147,12 +160,28 @@ class AndroidNioxCommunicationPlugin(private val context: Context) : NioxCommuni
                         // Ignore
                     }
                     currentScanCallback = null
+                    currentHandler = null
                 }
             } catch (e: SecurityException) {
                 currentScanCallback = null
                 continuation.resume(emptyList())
             }
         }
+    }
+
+    override fun stopScan() {
+        currentScanCallback?.let { callback ->
+            try {
+                if (hasBluetoothScanPermission()) {
+                    bluetoothLeScanner?.stopScan(callback)
+                }
+            } catch (e: SecurityException) {
+                // Ignore
+            }
+        }
+        currentHandler?.removeCallbacksAndMessages(null)
+        currentScanCallback = null
+        currentHandler = null
     }
 
     private fun hasBluetoothPermissions(): Boolean {

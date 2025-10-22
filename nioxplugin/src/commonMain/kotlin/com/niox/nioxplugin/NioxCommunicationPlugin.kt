@@ -19,8 +19,14 @@ interface NioxCommunicationPlugin {
      */
     suspend fun scanForDevices(
         scanDurationMs: Long = 10000,
-        serviceUuidFilter: String? = "000fc00b-8a4-4078-874c-14efbd4b510a"
+        serviceUuidFilter: String? = NioxConstants.NIOX_SERVICE_UUID
     ): List<BluetoothDevice>
+
+    /**
+     * Stop an ongoing Bluetooth scan
+     * Call this to cancel a scan before it completes naturally
+     */
+    fun stopScan()
 }
 
 /**

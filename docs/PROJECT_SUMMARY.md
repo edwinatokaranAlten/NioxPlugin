@@ -16,7 +16,7 @@ This is a **cross-platform Bluetooth library** that provides:
 The library works on:
 - **Android** (generates `.aar` file)
 - **iOS** (generates `.xcframework` file)
-- **Windows** (generates `.jar` file)
+- **Windows** (generates `.dll` file)
 
 ## Project Structure
 
@@ -49,8 +49,8 @@ NIOXSDKPlugin/
         ├── iosMain/kotlin/com/niox/nioxplugin/
         │   └── NioxCommunicationPlugin.ios.kt         # iOS implementation
         │
-        └── windowsMain/kotlin/com/niox/nioxplugin/
-            └── NioxCommunicationPlugin.windows.kt     # Windows implementation
+        └── windowsNativeMain/kotlin/com/niox/nioxplugin/
+            └── NioxCommunicationPlugin.windowsNative.kt  # Windows native implementation
 ```
 
 ## Key Features
@@ -60,12 +60,11 @@ NIOXSDKPlugin/
 ```kotlin
 interface NioxCommunicationPlugin {
     suspend fun checkBluetoothState(): BluetoothState
-    suspend fun startBluetoothScan(
-        onDeviceFound: (BluetoothDevice) -> Unit,
-        onScanComplete: () -> Unit = {},
-        scanDurationMs: Long = 10000
-    )
-    fun stopBluetoothScan()
+    suspend fun scanForDevices(
+        scanDurationMs: Long = 10000,
+        serviceUuidFilter: String? = NioxConstants.NIOX_SERVICE_UUID
+    ): List<BluetoothDevice>
+    fun stopScan()
 }
 ```
 
@@ -73,7 +72,7 @@ interface NioxCommunicationPlugin {
 
 - **Android**: Uses Android Bluetooth LE API with proper permission handling
 - **iOS**: Uses CoreBluetooth framework with CBCentralManager
-- **Windows**: Uses JNA for Windows Bluetooth API access (JVM-based)
+- **Windows**: Uses Kotlin/Native mingwX64 to generate native DLL
 
 ### 3. No UI Components
 
@@ -87,7 +86,7 @@ After building, you'll get these files:
 |----------|-----------|----------|
 | Android | `.aar` | `nioxplugin/build/outputs/aar/nioxplugin-release.aar` |
 | iOS | `.xcframework` | `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework` |
-| Windows | `.jar` | `nioxplugin/build/outputs/windows/niox-communication-plugin-windows.jar` |
+| Windows | `.dll` | `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll` |
 
 ## How to Build
 
@@ -104,8 +103,8 @@ After building, you'll get these files:
 # iOS (macOS only)
 ./gradlew :nioxplugin:assembleNioxCommunicationPluginXCFramework
 
-# Windows
-./gradlew :nioxplugin:buildWindowsDll
+# Windows DLL (Windows host only)
+./gradlew :nioxplugin:buildWindowsNativeDll
 ```
 
 ## How to Use
@@ -115,11 +114,10 @@ After building, you'll get these files:
 val plugin = createNioxCommunicationPlugin(context)
 val state = plugin.checkBluetoothState()
 
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        println("Found: ${device.name}")
-    }
-)
+val devices = plugin.scanForDevices()
+devices.forEach { device ->
+    println("Found: ${device.name}")
+}
 ```
 
 ### iOS Example (Swift)
@@ -127,23 +125,22 @@ plugin.startBluetoothScan(
 let plugin = NioxCommunicationPluginKt.createNioxCommunicationPlugin()
 let state = await plugin.checkBluetoothState()
 
-await plugin.startBluetoothScan(
-    onDeviceFound: { device in
-        print("Found: \(device.name ?? "Unknown")")
-    }
-)
+let devices = await plugin.scanForDevices()
+devices.forEach { device in
+    print("Found: \(device.name ?? "Unknown")")
+}
 ```
 
-### Windows Example
+### Windows Example (Native)
 ```kotlin
+// Load the native DLL and use the plugin
 val plugin = createNioxCommunicationPlugin()
 val state = plugin.checkBluetoothState()
 
-plugin.startBluetoothScan(
-    onDeviceFound = { device ->
-        println("Found: ${device.name}")
-    }
-)
+val devices = plugin.scanForDevices()
+devices.forEach { device ->
+    println("Found: ${device.name}")
+}
 ```
 
 ## Technical Details
@@ -153,8 +150,8 @@ plugin.startBluetoothScan(
 - **Gradle**: 8.5
 - **Android**: Min SDK 21, Target SDK 34
 - **iOS**: iOS 13.0+
+- **Windows**: Kotlin/Native mingwX64 toolchain
 - **Coroutines**: 1.7.3
-- **JNA** (Windows): 5.13.0
 
 ### Android Permissions Required
 ```xml
@@ -194,14 +191,14 @@ plugin.startBluetoothScan(
 - ✓ Bluetooth device scanning for all platforms
 - ✓ Generates AAR file for Android
 - ✓ Generates XCFramework for iOS
-- ✓ Generates JAR/DLL for Windows
+- ✓ Generates native DLL for Windows
 
 ## Notes
 
-- The Windows implementation uses JVM/JNA as a bridge to Windows APIs. For native Windows support, consider using Kotlin/Native Windows target (experimental).
+- The Windows implementation uses Kotlin/Native mingwX64 to generate a native DLL. Must be built on a Windows machine.
 - All implementations use coroutines for asynchronous operations.
 - The library handles permission checks internally but apps must request permissions at runtime.
-- iOS XCFramework includes support for device (arm64) and simulator (x64, arm64).
+- iOS XCFramework includes support for device (arm64).
 
 ---
 

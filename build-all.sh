@@ -1,20 +1,32 @@
 #!/bin/bash
 
-# Build script for Niox Communication Plugin
-# Generates AAR, XCFramework, and Windows JAR
+# Build script for Niox Communication Plugin (macOS)
+# Generates Android AAR and iOS XCFramework
 
 echo "========================================="
-echo "Building Niox Communication Plugin"
+echo "Building Niox Communication Plugin (macOS)"
 echo "========================================="
+
+# Use system Gradle if wrapper is not available
+if [ -f "./gradlew" ] && [ -x "./gradlew" ]; then
+    GRADLE_CMD="./gradlew"
+elif command -v gradle &> /dev/null; then
+    GRADLE_CMD="gradle"
+else
+    echo "❌ Error: Neither gradlew nor gradle command found"
+    exit 1
+fi
+
+echo "Using Gradle: $GRADLE_CMD"
 
 # Clean previous builds
 echo "Cleaning previous builds..."
-./gradlew clean
+$GRADLE_CMD clean
 
 # Build Android AAR
 echo ""
 echo "Building Android AAR..."
-./gradlew :nioxplugin:assembleRelease
+$GRADLE_CMD :nioxplugin:assembleRelease
 
 if [ $? -eq 0 ]; then
     echo "✓ Android AAR built successfully"
@@ -27,7 +39,7 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo ""
     echo "Building iOS XCFramework..."
-    ./gradlew :nioxplugin:assembleNioxCommunicationPluginXCFramework
+    $GRADLE_CMD :nioxplugin:assembleNioxCommunicationPluginXCFramework
 
     if [ $? -eq 0 ]; then
         echo "✓ iOS XCFramework built successfully"
@@ -37,19 +49,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     fi
 else
     echo ""
-    echo "⚠ Skipping iOS XCFramework build (macOS required)"
-fi
-
-# Build Windows JAR
-echo ""
-echo "Building Windows JAR..."
-./gradlew :nioxplugin:buildWindowsDll
-
-if [ $? -eq 0 ]; then
-    echo "✓ Windows JAR built successfully"
-    echo "  Location: nioxplugin/build/outputs/windows/niox-communication-plugin-windows.jar"
-else
-    echo "✗ Windows JAR build failed"
+    echo "⚠ Warning: This script is intended for macOS to build iOS XCFramework"
+    echo "⚠ iOS XCFramework build skipped (macOS required)"
 fi
 
 echo ""
