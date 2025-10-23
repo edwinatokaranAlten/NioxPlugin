@@ -1,0 +1,14 @@
+headers = windows.h bluetoothapis.h
+headerFilter = bluetoothapis.h
+package = platform.windows.bluetooth
+
+compilerOpts.mingw = -DUNICODE -D_UNICODE
+linkerOpts.mingw = -lBthprops -lKernel32
+
+---
+
+// Additional type definitions for better Kotlin/Native integration
+// These help with structure alignment and pointer handling
+
+#include <windows.h>
+#include <bluetoothapis.h>

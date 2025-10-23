@@ -42,11 +42,21 @@ kotlin {
         }
     }
 
-    // Windows Native Target (builds a DLL via Kotlin/Native - stub only)
+    // Windows Native Target (builds a DLL via Kotlin/Native with full Bluetooth functionality)
     mingwX64("windowsNative") {
+        compilations.getByName("main") {
+            cinterops {
+                val windowsBluetooth by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/windowsBluetooth.def"))
+                    packageName("platform.windows.bluetooth")
+                }
+            }
+        }
         binaries {
             sharedLib {
                 baseName = "NioxCommunicationPlugin"
+                // Link against Windows Bluetooth libraries
+                linkerOpts("-lBthprops", "-lKernel32")
             }
         }
     }
@@ -131,7 +141,7 @@ tasks.register<Jar>("buildWindowsJar") {
     }
 }
 
-// Task to copy native Windows DLL into outputs directory (stub only)
+// Task to copy native Windows DLL into outputs directory (fully functional with Bluetooth)
 tasks.register<Copy>("buildWindowsNativeDll") {
     // Build must run on Windows host; link task name for mingwX64 shared
     dependsOn("linkReleaseSharedWindowsNative")

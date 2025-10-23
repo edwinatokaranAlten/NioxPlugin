@@ -69,24 +69,37 @@ Output: `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframewo
 
 ### Build Windows Libraries
 
-**JAR (JVM-based implementation - RECOMMENDED):**
+**Quick Build (All Windows implementations):**
+```bash
+# PowerShell (Windows)
+.\build-all-windows.ps1
+
+# Builds both Native DLL and JAR in one command
+```
+
+**Native DLL (Kotlin/Native with full Bluetooth functionality - RECOMMENDED for native apps):**
+```bash
+# PowerShell (Windows)
+.\build-native-dll.ps1
+
+# Or using Gradle directly
+./gradlew :nioxplugin:buildWindowsNativeDll
+```
+Output: `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
+
+**JAR (JVM-based implementation - RECOMMENDED for JVM apps):**
 ```bash
 ./gradlew :nioxplugin:buildWindowsJar
 ```
 Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows-1.0.0.jar`
 
-**DLL (Native stub - limited functionality):**
-```bash
-./gradlew :nioxplugin:buildWindowsNativeDll
-```
-Output: `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
-
 **Notes:**
-- **JAR**: Full implementation using JVM + JNA with functional Bluetooth scanning via Windows Bluetooth APIs. **Use this for production.**
-- **DLL**: Kotlin/Native stub that always returns `UNSUPPORTED` state. Not functional for Bluetooth operations.
-- The JAR can be used from C# MAUI applications (see [CSHARP_MAUI_INTEGRATION.md](CSHARP_MAUI_INTEGRATION.md))
-- Building the JAR requires JDK 11+
-- Building the DLL requires a Windows host with mingw-w64 toolchain
+- **Native DLL**: Full Bluetooth implementation using Kotlin/Native C interop. No JVM required. **Best for C#, C++, WinUI3, and native desktop apps.** See [WINDOWS_NATIVE_DLL_GUIDE.md](docs/WINDOWS_NATIVE_DLL_GUIDE.md)
+- **JAR**: Full implementation using JVM + JNA. Requires JRE 11+. **Best for JVM-based applications.**
+- Both implementations provide identical Bluetooth functionality via Windows Bluetooth APIs
+- The JAR can be used from C# MAUI applications (see [CSHARP_MAUI_INTEGRATION.md](docs/CSHARP_MAUI_INTEGRATION.md))
+- The DLL can be used via P/Invoke from C#, C++, Electron, etc.
+- Building requires Windows host with MinGW-w64 toolchain (DLL) or JDK 11+ (JAR)
 
 ## Usage
 
@@ -252,15 +265,16 @@ data class BluetoothDevice(
 - Works on iOS 13.0+
 
 ### Windows
-- **JAR Implementation (Recommended)**: Full Bluetooth scanning using JNA to access Windows Bluetooth Classic APIs
+- **Two implementations available with identical functionality:**
+  - **Native DLL**: Full Bluetooth scanning using Kotlin/Native C interop to call Windows Bluetooth APIs directly. **No JVM required!** Recommended for native desktop apps (C#, C++, WinUI3). See [WINDOWS_NATIVE_DLL_GUIDE.md](docs/WINDOWS_NATIVE_DLL_GUIDE.md)
+  - **JAR**: Full Bluetooth scanning using JNA to access Windows Bluetooth APIs. Requires JRE 11+. Recommended for JVM-based applications.
 - Supports checking Bluetooth adapter state (enabled/disabled/unsupported)
 - Supports device scanning with duration control and NIOX device filtering
-- Uses `Bthprops.cpl` (Windows Bluetooth API) for device enumeration
+- Uses Windows Bluetooth Classic API (`Bthprops.cpl`) for device enumeration
 - RSSI (signal strength) is not available on Windows Bluetooth Classic API
-- Requires JRE 11+ to run
 - Works on Windows 10/11 with Bluetooth hardware
-- Can be integrated into C# MAUI applications (see [CSHARP_MAUI_INTEGRATION.md](CSHARP_MAUI_INTEGRATION.md))
-- **DLL Implementation**: Native stub only, not functional for Bluetooth operations
+- Both implementations can be integrated into C# MAUI/WinUI3 applications
+- Native DLL provides smaller footprint, instant startup, and direct P/Invoke integration
 
 ## License
 
