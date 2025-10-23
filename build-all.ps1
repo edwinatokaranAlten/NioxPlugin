@@ -1,6 +1,28 @@
 # Build script for Niox Communication Plugin (Windows PowerShell)
 # Generates Android AAR and Windows DLL
 
+
+# ----- Force JDK 17 for this build session -----
+$jdk17Candidates = @(
+  "C:\Program Files\Eclipse Adoptium\jdk-17",
+  "C:\Program Files\Java\jdk-17"
+)
+
+$jdk17 = $jdk17Candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+if ($null -ne $jdk17) {
+  $env:JAVA_HOME = $jdk17
+  $env:Path = "$env:JAVA_HOME\bin;$env:Path"
+  Write-Host "Using JAVA_HOME = $env:JAVA_HOME" -ForegroundColor Gray
+} else {
+  Write-Host "❌ JDK 17 not found. Please install JDK 17." -ForegroundColor Red
+  exit 1
+}
+
+# Optional: silence native-access warning spam
+$env:JDK_JAVA_OPTIONS = "--enable-native-access=ALL-UNNAMED"
+# -----------------------------------------------
+
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host "Building Niox Communication Plugin (Windows)" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
