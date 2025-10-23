@@ -101,6 +101,9 @@ Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows-1.0.
 - The DLL can be used via P/Invoke from C#, C++, Electron, etc.
 - Building requires Windows host with MinGW-w64 toolchain (DLL) or JDK 11+ (JAR)
 
+**Troubleshooting:**
+- If build fails with cache issues, use: `.\build-native-dll.ps1 -Clean`
+
 ## Usage
 
 ### Common API

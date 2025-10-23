@@ -9,7 +9,7 @@ import platform.windows.*
  * Windows Native (mingwX64) implementation using C interop to call Windows Bluetooth APIs directly.
  * This implementation provides full Bluetooth functionality without requiring a JVM runtime.
  */
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, UnsafeNumber::class)
 class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
 
     private var isScanning = false
@@ -21,10 +21,10 @@ class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
                 try {
                     // Allocate BLUETOOTH_FIND_RADIO_PARAMS structure
                     val radioParams = alloc<BLUETOOTH_FIND_RADIO_PARAMS>()
-                    radioParams.dwSize = sizeOf<BLUETOOTH_FIND_RADIO_PARAMS>().toUInt()
+                    radioParams.dwSize = sizeOf<BLUETOOTH_FIND_RADIO_PARAMS>().convert()
 
-                    // Allocate HANDLE pointer
-                    val radioHandle = allocPointerTo<HANDLE>()
+                    // Allocate HANDLE variable
+                    val radioHandle = alloc<HANDLEVar>()
 
                     // Try to find first Bluetooth radio
                     val findHandle = BluetoothFindFirstRadio(radioParams.ptr, radioHandle.ptr)
@@ -37,7 +37,7 @@ class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
                     BluetoothFindRadioClose(findHandle)
 
                     // Clean up: close radio handle
-                    val radio = radioHandle.pointed.value
+                    val radio = radioHandle.value
                     if (radio != null && radio != INVALID_HANDLE_VALUE) {
                         CloseHandle(radio)
                     }
@@ -97,32 +97,32 @@ class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
                 try {
                     // Find first Bluetooth radio
                     val radioParams = alloc<BLUETOOTH_FIND_RADIO_PARAMS>()
-                    radioParams.dwSize = sizeOf<BLUETOOTH_FIND_RADIO_PARAMS>().toUInt()
+                    radioParams.dwSize = sizeOf<BLUETOOTH_FIND_RADIO_PARAMS>().convert()
 
-                    val radioHandlePtr = allocPointerTo<HANDLE>()
-                    val radioFindHandle = BluetoothFindFirstRadio(radioParams.ptr, radioHandlePtr.ptr)
+                    val radioHandleVar = alloc<HANDLEVar>()
+                    val radioFindHandle = BluetoothFindFirstRadio(radioParams.ptr, radioHandleVar.ptr)
 
                     if (radioFindHandle == null || radioFindHandle == INVALID_HANDLE_VALUE) {
                         return@withContext
                     }
 
-                    val radioHandle = radioHandlePtr.pointed.value
+                    val radioHandle = radioHandleVar.value
 
                     try {
                         // Set up device search parameters
                         val searchParams = alloc<BLUETOOTH_DEVICE_SEARCH_PARAMS>()
-                        searchParams.dwSize = sizeOf<BLUETOOTH_DEVICE_SEARCH_PARAMS>().toUInt()
-                        searchParams.fReturnAuthenticated = 1u
-                        searchParams.fReturnRemembered = 1u
-                        searchParams.fReturnUnknown = 1u
-                        searchParams.fReturnConnected = 1u
-                        searchParams.fIssueInquiry = 1u
-                        searchParams.cTimeoutMultiplier = 2u.toUByte()
+                        searchParams.dwSize = sizeOf<BLUETOOTH_DEVICE_SEARCH_PARAMS>().convert()
+                        searchParams.fReturnAuthenticated = 1
+                        searchParams.fReturnRemembered = 1
+                        searchParams.fReturnUnknown = 1
+                        searchParams.fReturnConnected = 1
+                        searchParams.fIssueInquiry = 1
+                        searchParams.cTimeoutMultiplier = 2u.convert()
                         searchParams.hRadio = radioHandle
 
                         // Allocate device info structure
                         val deviceInfo = alloc<BLUETOOTH_DEVICE_INFO>()
-                        deviceInfo.dwSize = sizeOf<BLUETOOTH_DEVICE_INFO>().toUInt()
+                        deviceInfo.dwSize = sizeOf<BLUETOOTH_DEVICE_INFO>().convert()
 
                         // Start device enumeration
                         val deviceFindHandle = BluetoothFindFirstDevice(searchParams.ptr, deviceInfo.ptr)
@@ -162,9 +162,9 @@ class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
                                             serviceUuids = null,
                                             advertisingData = mapOf(
                                                 "classOfDevice" to deviceInfo.ulClassofDevice.toInt(),
-                                                "connected" to (deviceInfo.fConnected != 0u),
-                                                "remembered" to (deviceInfo.fRemembered != 0u),
-                                                "authenticated" to (deviceInfo.fAuthenticated != 0u)
+                                                "connected" to (deviceInfo.fConnected != 0),
+                                                "remembered" to (deviceInfo.fRemembered != 0),
+                                                "authenticated" to (deviceInfo.fAuthenticated != 0)
                                             )
                                         )
 
@@ -172,7 +172,7 @@ class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
                                     }
 
                                     // Reset size for next device
-                                    deviceInfo.dwSize = sizeOf<BLUETOOTH_DEVICE_INFO>().toUInt()
+                                    deviceInfo.dwSize = sizeOf<BLUETOOTH_DEVICE_INFO>().convert()
 
                                 } while (BluetoothFindNextDevice(deviceFindHandle, deviceInfo.ptr) != 0)
 
@@ -194,12 +194,27 @@ class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    private fun formatBluetoothAddress(addressBytes: CArrayPointer<UByteVar>): String {
-        return buildString {
-            for (i in 5 downTo 0) {
-                if (i < 5) append(":")
-                append(addressBytes[i].toString(16).padStart(2, '0').uppercase())
+    private fun formatBluetoothAddress(address: BLUETOOTH_ADDRESS): String {
+        // BLUETOOTH_ADDRESS is a structure with a byte array
+        // Access the byte array (ullLong or rgBytes depending on Windows SDK version)
+        return try {
+            // Try to format as MAC address from the structure
+            val bytes = ByteArray(6)
+            // The address is stored in the ullLong field as a 48-bit value
+            // We need to extract bytes in reverse order (little-endian)
+            address.useContents {
+                // ullLong contains the 48-bit Bluetooth address
+                val addrValue = ullLong.toLong()
+                for (i in 0..5) {
+                    bytes[5 - i] = ((addrValue shr (i * 8)) and 0xFF).toByte()
+                }
             }
+
+            bytes.joinToString(":") { byte ->
+                String.format("%02X", byte.toUByte().toInt())
+            }
+        } catch (e: Exception) {
+            "00:00:00:00:00:00"
         }
     }
 

@@ -1,10 +1,55 @@
 # Build script for Windows Native DLL (Full Bluetooth Implementation)
 # This builds a FULLY FUNCTIONAL native DLL using Kotlin/Native C interop
 # NO JVM REQUIRED - Pure native Windows DLL
+#
+# Usage:
+#   .\build-native-dll.ps1           # Normal build (uses cache)
+#   .\build-native-dll.ps1 -Clean    # Force rebuild (cleans all caches)
+
+param(
+    [switch]$Clean,  # Force clean all caches before building
+    [switch]$Help    # Show help
+)
+
+# Show help if requested
+if ($Help) {
+    Write-Host @"
+Windows Native DLL Build Script
+
+Usage:
+  .\build-native-dll.ps1           Normal build (fast, uses cache)
+  .\build-native-dll.ps1 -Clean    Force rebuild (cleans all caches)
+  .\build-native-dll.ps1 -Help     Show this help
+
+Normal Build:
+  • Uses Gradle cache for speed
+  • Verifies source files
+  • Best for regular development
+  • Time: ~30-60 seconds
+
+Force Clean Build (-Clean):
+  • Stops Gradle daemon
+  • Deletes all caches
+  • Forces fresh compilation
+  • Use when cache issues occur
+  • Time: ~60-90 seconds
+
+Examples:
+  .\build-native-dll.ps1              # Regular development
+  .\build-native-dll.ps1 -Clean       # After git pull or cache issues
+
+"@
+    exit 0
+}
 
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host "Building Windows Native DLL" -ForegroundColor Cyan
 Write-Host "Kotlin/Native + C Interop Implementation" -ForegroundColor Cyan
+if ($Clean) {
+    Write-Host "MODE: Force Clean Build (all caches)" -ForegroundColor Yellow
+} else {
+    Write-Host "MODE: Normal Build (uses cache)" -ForegroundColor Gray
+}
 Write-Host "=========================================" -ForegroundColor Cyan
 
 # Check OS
@@ -27,8 +72,96 @@ if (Test-Path ".\gradlew.bat" -PathType Leaf) {
 Write-Host "Using Gradle: $GRADLE_CMD" -ForegroundColor Gray
 Write-Host ""
 
+# Determine total steps
+$totalSteps = if ($Clean) { 8 } else { 6 }
+
+# Step 0: Source file verification
+Write-Host "[1/$totalSteps] Verifying source file..." -ForegroundColor Yellow
+$sourceFile = "nioxplugin\src\windowsNativeMain\kotlin\com\niox\nioxplugin\NioxCommunicationPlugin.windowsNative.kt"
+
+if (-not (Test-Path $sourceFile)) {
+    Write-Host "❌ Source file not found: $sourceFile" -ForegroundColor Red
+    exit 1
+}
+
+# Check for updated code markers
+$fileContent = Get-Content $sourceFile -Raw
+$hasUnsafeNumber = $fileContent -match '@OptIn\(ExperimentalForeignApi::class, UnsafeNumber::class\)'
+$hasHANDLEVar = $fileContent -match 'alloc<HANDLEVar>\(\)'
+$hasConvert = $fileContent -match '\.convert\(\)'
+
+if ($hasUnsafeNumber -and $hasHANDLEVar -and $hasConvert) {
+    Write-Host "✓ Source file verified (contains updated code)" -ForegroundColor Green
+} else {
+    Write-Host "⚠ Warning: Source file may be outdated" -ForegroundColor Yellow
+    Write-Host "  Missing expected markers:" -ForegroundColor Gray
+    if (-not $hasUnsafeNumber) { Write-Host "    • UnsafeNumber annotation" -ForegroundColor Gray }
+    if (-not $hasHANDLEVar) { Write-Host "    • HANDLEVar usage" -ForegroundColor Gray }
+    if (-not $hasConvert) { Write-Host "    • .convert() calls" -ForegroundColor Gray }
+    Write-Host ""
+
+    if (-not $Clean) {
+        Write-Host "Suggestion: Run with -Clean flag to force fresh build" -ForegroundColor Yellow
+        Write-Host "  .\build-native-dll.ps1 -Clean" -ForegroundColor Cyan
+        Write-Host ""
+        $response = Read-Host "Continue anyway? (y/n)"
+        if ($response -ne 'y') {
+            exit 1
+        }
+    }
+}
+
+$currentStep = 2
+
+# If Clean mode, perform deep cleaning
+if ($Clean) {
+    Write-Host "`n[$currentStep/$totalSteps] Stopping Gradle daemon..." -ForegroundColor Yellow
+    & $GRADLE_CMD --stop 2>&1 | Out-Null
+    Start-Sleep -Seconds 2
+    Write-Host "✓ Gradle daemon stopped" -ForegroundColor Green
+    $currentStep++
+
+    Write-Host "`n[$currentStep/$totalSteps] Deep cleaning caches..." -ForegroundColor Yellow
+
+    # Clean build directory
+    if (Test-Path "nioxplugin\build") {
+        Remove-Item -Recurse -Force "nioxplugin\build" -ErrorAction SilentlyContinue
+        Write-Host "  ✓ Removed nioxplugin\build\" -ForegroundColor Green
+    }
+
+    # Clean Gradle caches
+    if (Test-Path ".gradle\caches") {
+        Remove-Item -Recurse -Force ".gradle\caches" -ErrorAction SilentlyContinue
+        Write-Host "  ✓ Removed .gradle\caches\" -ForegroundColor Green
+    }
+
+    # Clean Kotlin DSL cache
+    if (Test-Path ".gradle") {
+        Get-ChildItem ".gradle\*\kotlin-dsl" -ErrorAction SilentlyContinue |
+            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "  ✓ Removed Kotlin DSL caches" -ForegroundColor Green
+    }
+
+    # Clean Kotlin compiler cache
+    $kotlinCache = "$env:USERPROFILE\.kotlin"
+    if (Test-Path $kotlinCache) {
+        Remove-Item -Recurse -Force "$kotlinCache\*" -ErrorAction SilentlyContinue
+        Write-Host "  ✓ Removed Kotlin compiler cache" -ForegroundColor Green
+    }
+
+    # Clean Konan cache (Kotlin/Native)
+    $konanCache = "$env:USERPROFILE\.konan\cache"
+    if (Test-Path $konanCache) {
+        Remove-Item -Recurse -Force $konanCache -ErrorAction SilentlyContinue
+        Write-Host "  ✓ Removed Kotlin/Native cache" -ForegroundColor Green
+    }
+
+    Write-Host "✓ Deep clean completed" -ForegroundColor Green
+    $currentStep++
+}
+
 # Check Java version
-Write-Host "[1/5] Checking Java version..." -ForegroundColor Yellow
+Write-Host "`n[$currentStep/$totalSteps] Checking Java version..." -ForegroundColor Yellow
 $javaVersion = java -version 2>&1 | Select-Object -First 1
 Write-Host "  $javaVersion" -ForegroundColor Gray
 
@@ -36,28 +169,41 @@ if (-not $javaVersion) {
     Write-Host "❌ Java not found. Please install JDK 11 or higher" -ForegroundColor Red
     exit 1
 }
-
 Write-Host "✓ Java found" -ForegroundColor Green
+$currentStep++
 
-# Step 1: Clean previous builds
-Write-Host "`n[2/5] Cleaning previous builds..." -ForegroundColor Yellow
-& $GRADLE_CMD clean
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠ Warning: Clean failed, continuing anyway..." -ForegroundColor Yellow
+# Clean previous builds
+Write-Host "`n[$currentStep/$totalSteps] Cleaning previous builds..." -ForegroundColor Yellow
+$cleanFlags = @("clean")
+if ($Clean) {
+    $cleanFlags += @("--no-configuration-cache", "--no-build-cache", "--no-daemon")
+} else {
+    $cleanFlags += @("--no-configuration-cache")
 }
 
-Write-Host "✓ Clean completed" -ForegroundColor Green
+& $GRADLE_CMD @cleanFlags 2>&1 | Out-Null
 
-# Step 2: Generate C interop bindings
-Write-Host "`n[3/5] Generating C interop bindings for Windows Bluetooth APIs..." -ForegroundColor Yellow
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "⚠ Warning: Clean had issues, continuing anyway..." -ForegroundColor Yellow
+} else {
+    Write-Host "✓ Clean completed" -ForegroundColor Green
+}
+$currentStep++
+
+# Generate C interop bindings
+Write-Host "`n[$currentStep/$totalSteps] Generating C interop bindings for Windows Bluetooth APIs..." -ForegroundColor Yellow
 Write-Host "  This step creates Kotlin bindings for:" -ForegroundColor Gray
 Write-Host "    - BluetoothFindFirstRadio" -ForegroundColor Gray
 Write-Host "    - BluetoothFindFirstDevice" -ForegroundColor Gray
 Write-Host "    - BluetoothFindNextDevice" -ForegroundColor Gray
 Write-Host "    - CloseHandle (Kernel32)" -ForegroundColor Gray
 
-& $GRADLE_CMD :nioxplugin:cinteropWindowsBluetoothWindowsNative
+$cinteropFlags = @(":nioxplugin:cinteropWindowsBluetoothWindowsNative")
+if ($Clean) {
+    $cinteropFlags += @("--rerun-tasks", "--no-configuration-cache", "--no-build-cache")
+}
+
+& $GRADLE_CMD @cinteropFlags
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Failed to generate C interop bindings" -ForegroundColor Red
@@ -65,29 +211,58 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "  • Windows SDK headers not found (bluetoothapis.h)" -ForegroundColor Gray
     Write-Host "  • MinGW-w64 toolchain not installed" -ForegroundColor Gray
     Write-Host "  • Check: nioxplugin/src/nativeInterop/cinterop/windowsBluetooth.def" -ForegroundColor Gray
+
+    if (-not $Clean) {
+        Write-Host "`nTry running with -Clean flag:" -ForegroundColor Yellow
+        Write-Host "  .\build-native-dll.ps1 -Clean" -ForegroundColor Cyan
+    }
     exit 1
 }
 
 Write-Host "✓ C interop bindings generated successfully" -ForegroundColor Green
+$currentStep++
 
-# Step 3: Compile Kotlin/Native code
-Write-Host "`n[4/5] Compiling Kotlin/Native code..." -ForegroundColor Yellow
-& $GRADLE_CMD :nioxplugin:compileKotlinWindowsNative
+# Compile Kotlin/Native code
+Write-Host "`n[$currentStep/$totalSteps] Compiling Kotlin/Native code..." -ForegroundColor Yellow
+
+$compileFlags = @(":nioxplugin:compileKotlinWindowsNative")
+if ($Clean) {
+    $compileFlags += @("--rerun-tasks", "--no-configuration-cache", "--no-build-cache")
+}
+
+& $GRADLE_CMD @compileFlags
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Failed to compile Kotlin/Native code" -ForegroundColor Red
+    Write-Host "`nCommon issues:" -ForegroundColor Yellow
+    Write-Host "  • Type mismatches → Old cached code" -ForegroundColor Gray
+    Write-Host "  • Unresolved references → Stale build cache" -ForegroundColor Gray
+
+    if (-not $Clean) {
+        Write-Host "`nSolution: Run with -Clean flag to clean all caches:" -ForegroundColor Yellow
+        Write-Host "  .\build-native-dll.ps1 -Clean" -ForegroundColor Cyan
+    } else {
+        Write-Host "`nEven with clean build, compilation failed." -ForegroundColor Yellow
+        Write-Host "Check error messages above for details." -ForegroundColor Gray
+    }
     exit 1
 }
 
 Write-Host "✓ Kotlin/Native code compiled successfully" -ForegroundColor Green
+$currentStep++
 
-# Step 4: Link native DLL
-Write-Host "`n[5/5] Linking native DLL..." -ForegroundColor Yellow
+# Link native DLL
+Write-Host "`n[$currentStep/$totalSteps] Linking native DLL..." -ForegroundColor Yellow
 Write-Host "  Linking against:" -ForegroundColor Gray
 Write-Host "    - Bthprops.cpl (Windows Bluetooth API)" -ForegroundColor Gray
 Write-Host "    - Kernel32.dll (Windows System API)" -ForegroundColor Gray
 
-& $GRADLE_CMD :nioxplugin:buildWindowsNativeDll
+$linkFlags = @(":nioxplugin:buildWindowsNativeDll")
+if ($Clean) {
+    $linkFlags += @("--rerun-tasks", "--no-configuration-cache", "--no-build-cache")
+}
+
+& $GRADLE_CMD @linkFlags
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Failed to link native DLL" -ForegroundColor Red
@@ -108,7 +283,7 @@ if (-not (Test-Path $dllPath)) {
 
 Write-Host "✓ Native DLL linked successfully" -ForegroundColor Green
 
-# Get DLL information
+# Build success summary
 Write-Host "`n=========================================" -ForegroundColor Cyan
 Write-Host "BUILD SUCCESS!" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Cyan
@@ -124,9 +299,24 @@ Write-Host "  Modified: $($dllInfo.LastWriteTime)" -ForegroundColor White
 # Check DLL exports (if dumpbin is available)
 if (Get-Command dumpbin -ErrorAction SilentlyContinue) {
     Write-Host "`n🔍 DLL Exports:" -ForegroundColor Yellow
-    dumpbin /EXPORTS $dllPath | Select-String "createNioxCommunicationPlugin" | ForEach-Object {
-        Write-Host "  ✓ $_" -ForegroundColor Green
+    $exports = dumpbin /EXPORTS $dllPath 2>&1 | Select-String "createNioxCommunicationPlugin"
+    if ($exports) {
+        Write-Host "  ✓ Main entry point found" -ForegroundColor Green
     }
+}
+
+# Show what was cleaned (if Clean mode)
+if ($Clean) {
+    Write-Host "`n🧹 Cleaned:" -ForegroundColor Yellow
+    Write-Host "  ✓ Gradle daemon (stopped and restarted)" -ForegroundColor Green
+    Write-Host "  ✓ Build directory" -ForegroundColor Green
+    Write-Host "  ✓ Gradle caches" -ForegroundColor Green
+    Write-Host "  ✓ Kotlin compiler cache" -ForegroundColor Green
+    Write-Host "  ✓ Kotlin/Native cache" -ForegroundColor Green
+    Write-Host "  ✓ Configuration cache" -ForegroundColor Green
+    Write-Host "  ✓ Build cache" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  This was a FRESH build with zero cached artifacts" -ForegroundColor Cyan
 }
 
 # Display features
@@ -165,6 +355,13 @@ Write-Host "  Native DLL: ~$dllSize KB, no JVM, instant startup" -ForegroundColo
 Write-Host "  JAR: ~2MB + JRE (~50MB), JVM startup delay" -ForegroundColor Gray
 Write-Host "  → Use Native DLL for C#/C++ apps" -ForegroundColor Green
 Write-Host "  → Use JAR for JVM-based apps" -ForegroundColor Green
+
+# Troubleshooting tips
+if (-not $Clean) {
+    Write-Host "`n💡 Tip:" -ForegroundColor Yellow
+    Write-Host "  If you encounter cache or compilation issues, run:" -ForegroundColor White
+    Write-Host "  .\build-native-dll.ps1 -Clean" -ForegroundColor Cyan
+}
 
 Write-Host "`n=========================================" -ForegroundColor Cyan
 Write-Host "Windows Native DLL is ready!" -ForegroundColor Green

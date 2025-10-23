@@ -15,7 +15,14 @@ This document provides a quick reference for all build scripts in the project.
 
 **Usage:**
 ```powershell
+# Normal build (uses cache for speed)
 .\build-native-dll.ps1
+
+# Clean build (force rebuild, cleans all caches)
+.\build-native-dll.ps1 -Clean
+
+# Get help
+.\build-native-dll.ps1 -Help
 ```
 
 **Output:**
@@ -23,16 +30,23 @@ This document provides a quick reference for all build scripts in the project.
 
 **Features:**
 - ✅ Step-by-step build progress
+- ✅ Source file verification
 - ✅ C interop binding generation
 - ✅ Kotlin/Native compilation
 - ✅ Native DLL linking
 - ✅ Automatic verification
 - ✅ Detailed output information
+- ✅ Smart cache management (normal vs clean mode)
+- ✅ Build mode help system
 
 **What it builds:**
 - Native Windows DLL (no JVM required)
 - Full Bluetooth functionality via C interop
 - ~500KB-1MB size
+
+**Build Modes:**
+- **Normal Mode** (default): Uses Gradle cache, fast builds (~30-60s)
+- **Clean Mode** (`-Clean` flag): Deep cleans all caches, fresh build (~60-90s), use when encountering cache issues
 
 ---
 
@@ -200,15 +214,26 @@ This document provides a quick reference for all build scripts in the project.
 **Issue:** `Build failed on WSL`
 **Solution:** Use native Windows instead of WSL for best results
 
+**Issue:** `Compilation errors don't match source code` or `Type mismatch errors after updating`
+**Solution:** Use clean build to clear all caches:
+```powershell
+.\build-native-dll.ps1 -Clean
+```
+
 ### Getting Help
 
 1. Check the specific build guide:
    - Native DLL: [BUILD_AND_TEST_WINDOWS_NATIVE.md](BUILD_AND_TEST_WINDOWS_NATIVE.md)
    - Windows Full: [docs/WINDOWS_NATIVE_DLL_GUIDE.md](docs/WINDOWS_NATIVE_DLL_GUIDE.md)
 
-2. Verify prerequisites are installed
+2. Use built-in help:
+   ```powershell
+   .\build-native-dll.ps1 -Help
+   ```
 
-3. Try direct Gradle commands first:
+3. Verify prerequisites are installed
+
+4. Try direct Gradle commands first:
    ```bash
    .\gradlew :nioxplugin:tasks
    ```
@@ -275,18 +300,28 @@ Get-Item nioxplugin\build\XCFrameworks\release\NioxCommunicationPlugin.xcframewo
 
 ## 💡 Tips
 
-1. **First Build:** Always clean first
+1. **First Build:** Use normal mode for initial builds
    ```bash
-   .\gradlew clean
+   .\build-native-dll.ps1
    ```
 
-2. **Faster Builds:** Use Gradle daemon (auto-enabled)
+2. **Cache Issues:** Use `-Clean` flag to resolve compilation errors
+   ```powershell
+   .\build-native-dll.ps1 -Clean
+   ```
 
-3. **Parallel Builds:** `build-all-windows.ps1` builds sequentially for stability
+3. **After Git Pull:** If build fails after pulling changes, use clean build
+   ```powershell
+   .\build-native-dll.ps1 -Clean
+   ```
 
-4. **Verify Output:** Scripts include automatic verification steps
+4. **Faster Builds:** Use Gradle daemon (auto-enabled) and normal mode
 
-5. **Keep Tools Updated:**
+5. **Parallel Builds:** `build-all-windows.ps1` builds sequentially for stability
+
+6. **Verify Output:** Scripts include automatic verification steps
+
+7. **Keep Tools Updated:**
    - Update Gradle: `.\gradlew wrapper --gradle-version=8.5`
    - Update JDK: Install latest JDK 11+ version
 
