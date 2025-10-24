@@ -14,9 +14,6 @@
 		<!-- Optional but helpful for MSIX to include all referenced DLLs -->
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
-	<ItemGroup>
-	  <None Remove="Libraries\NioxCommunicationPlugin.dll" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<Content Include="Assets\SplashScreen.scale-200.png" />
@@ -26,21 +23,16 @@
 		<Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
 		<Content Include="Assets\StoreLogo.png" />
 		<Content Include="Assets\Wide310x150Logo.scale-200.png" />
-		<Content Include="Libraries\NioxCommunicationPlugin.dll">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Content>
 	</ItemGroup>
 
-	<!-- ADD: Reference the IKVM-converted DLL so you can compile against it -->
+	<!-- Native DLL - must be included as Content for MSIX packaging -->
 	<ItemGroup>
-		<Reference Include="NioxCommunicationPlugin">
-			<HintPath>Libraries\NioxCommunicationPlugin.dll</HintPath>
-			<Private>true</Private>
-			<!-- ensures it’s copied to output/MSIX -->
-		</Reference>
-
-		<!-- Also ensure it’s copied (belt-and-suspenders). You can omit this
-         because <Private>true</Private> usually suffices, but keeping it is harmless. -->
+		<Content Include="Libraries\NioxCommunicationPlugin.dll">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+			<!-- Critical: Link ensures it goes into AppX folder for packaged apps -->
+			<Link>NioxCommunicationPlugin.dll</Link>
+		</Content>
 	</ItemGroup>
 
 	<ItemGroup>
