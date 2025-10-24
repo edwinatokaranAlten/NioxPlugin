@@ -1,59 +1,101 @@
 #!/bin/bash
 
-# Build script for Niox Communication Plugin (macOS)
-# Generates Android AAR and iOS XCFramework
+# Build ALL mobile platforms (Android + iOS)
+# Calls individual build scripts for each platform
+# Requirements: macOS for iOS builds
 
 echo "========================================="
-echo "Building Niox Communication Plugin (macOS)"
+echo "Building ALL Mobile Platforms"
 echo "========================================="
+echo ""
 
-# Use system Gradle if wrapper is not available
-if [ -f "./gradlew" ] && [ -x "./gradlew" ]; then
-    GRADLE_CMD="./gradlew"
-elif command -v gradle &> /dev/null; then
-    GRADLE_CMD="gradle"
-else
-    echo "❌ Error: Neither gradlew nor gradle command found"
-    exit 1
-fi
-
-echo "Using Gradle: $GRADLE_CMD"
-
-# Clean previous builds
-echo "Cleaning previous builds..."
-$GRADLE_CMD clean
+# Track success/failure
+androidSuccess=false
+iosSuccess=false
 
 # Build Android AAR
+echo "========================================="
+echo "[1/2] Building Android AAR"
+echo "========================================="
 echo ""
-echo "Building Android AAR..."
-$GRADLE_CMD :nioxplugin:assembleRelease
 
-if [ $? -eq 0 ]; then
-    echo "✓ Android AAR built successfully"
-    echo "  Location: nioxplugin/build/outputs/aar/nioxplugin-release.aar"
+if [ -f "./build-android.sh" ] && [ -x "./build-android.sh" ]; then
+    ./build-android.sh
+    if [ $? -eq 0 ]; then
+        androidSuccess=true
+    fi
 else
-    echo "✗ Android AAR build failed"
+    echo "❌ Error: build-android.sh not found or not executable"
 fi
+
+echo ""
 
 # Build iOS XCFramework (only on macOS)
 if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "========================================="
+    echo "[2/2] Building iOS XCFramework"
+    echo "========================================="
     echo ""
-    echo "Building iOS XCFramework..."
-    $GRADLE_CMD :nioxplugin:assembleNioxCommunicationPluginXCFramework
 
-    if [ $? -eq 0 ]; then
-        echo "✓ iOS XCFramework built successfully"
-        echo "  Location: nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework"
+    if [ -f "./build-ios.sh" ] && [ -x "./build-ios.sh" ]; then
+        ./build-ios.sh
+        if [ $? -eq 0 ]; then
+            iosSuccess=true
+        fi
     else
-        echo "✗ iOS XCFramework build failed"
+        echo "❌ Error: build-ios.sh not found or not executable"
     fi
 else
+    echo "========================================="
+    echo "[2/2] iOS Build - SKIPPED"
+    echo "========================================="
     echo ""
-    echo "⚠ Warning: This script is intended for macOS to build iOS XCFramework"
-    echo "⚠ iOS XCFramework build skipped (macOS required)"
+    echo "⚠️  iOS XCFramework build requires macOS with Xcode"
+    echo "   Current platform: $OSTYPE"
+    echo ""
+fi
+
+# Build Summary
+echo ""
+echo "========================================="
+echo "BUILD SUMMARY"
+echo "========================================="
+echo ""
+
+if $androidSuccess; then
+    echo "✅ Android AAR: SUCCESS"
+    echo "   Location: nioxplugin/build/outputs/aar/nioxplugin-release.aar"
+else
+    echo "❌ Android AAR: FAILED"
+fi
+
+echo ""
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    if $iosSuccess; then
+        echo "✅ iOS XCFramework: SUCCESS"
+        echo "   Location: nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework"
+    else
+        echo "❌ iOS XCFramework: FAILED"
+    fi
+else
+    echo "⊘  iOS XCFramework: SKIPPED (macOS required)"
 fi
 
 echo ""
 echo "========================================="
-echo "Build Complete!"
-echo "========================================="
+
+# Exit status
+if $androidSuccess && ($iosSuccess || [[ "$OSTYPE" != "darwin"* ]]); then
+    echo "ALL BUILDS SUCCESSFUL! 🎉"
+    echo "========================================="
+    exit 0
+elif $androidSuccess || $iosSuccess; then
+    echo "PARTIAL SUCCESS"
+    echo "========================================="
+    exit 0
+else
+    echo "ALL BUILDS FAILED"
+    echo "========================================="
+    exit 1
+fi

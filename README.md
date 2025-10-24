@@ -45,64 +45,59 @@ niox-communication-plugin/
 
 ## Building the Library
 
-### Build All Platforms
+Each platform has a dedicated build script for easy, streamlined builds.
 
+### Individual Platform Builds
+
+**Android AAR:**
 ```bash
-./gradlew build
+./build-android.sh
 ```
-
-### Build Android AAR
-
-```bash
-./gradlew :nioxplugin:assembleRelease
-```
-
 Output: `nioxplugin/build/outputs/aar/nioxplugin-release.aar`
 
-### Build iOS XCFramework
-
+**iOS XCFramework** (macOS only):
 ```bash
-./gradlew :nioxplugin:assembleNioxCommunicationPluginXCFramework
+./build-ios.sh
 ```
-
 Output: `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework`
 
-### Build Windows Libraries
-
-**Quick Build (All Windows implementations):**
-```bash
-# PowerShell (Windows)
-.\build-all-windows.ps1
-
-# Builds both Native DLL and JAR in one command
-```
-
-**Native DLL (Kotlin/Native with full Bluetooth functionality - RECOMMENDED for native apps):**
-```bash
-# PowerShell (Windows)
-.\build-native-dll.ps1
-
-# Or using Gradle directly
-./gradlew :nioxplugin:buildWindowsNativeDll
+**Windows Native DLL** (RECOMMENDED for C#, C++, WinUI3):
+```powershell
+.\build-native-dll.ps1           # Normal build
+.\build-native-dll.ps1 -Clean    # Clean build (cache issues)
 ```
 Output: `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
 
-**JAR (JVM-based implementation - RECOMMENDED for JVM apps):**
-```bash
-./gradlew :nioxplugin:buildWindowsJar
+**Windows JAR** (for JVM applications):
+```powershell
+.\build-windows-jar.ps1
 ```
 Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows-1.0.0.jar`
 
-**Notes:**
-- **Native DLL**: Full Bluetooth implementation using Kotlin/Native C interop. No JVM required. **Best for C#, C++, WinUI3, and native desktop apps.** See [WINDOWS_NATIVE_DLL_GUIDE.md](docs/WINDOWS_NATIVE_DLL_GUIDE.md)
-- **JAR**: Full implementation using JVM + JNA. Requires JRE 11+. **Best for JVM-based applications.**
-- Both implementations provide identical Bluetooth functionality via Windows Bluetooth APIs
-- The JAR can be used from C# MAUI applications (see [CSHARP_MAUI_INTEGRATION.md](docs/CSHARP_MAUI_INTEGRATION.md))
-- The DLL can be used via P/Invoke from C#, C++, Electron, etc.
-- Building requires Windows host with MinGW-w64 toolchain (DLL) or JDK 11+ (JAR)
+### Build Multiple Platforms
+
+**All Windows implementations:**
+```powershell
+.\build-all-windows.ps1    # Builds DLL + JAR
+```
+
+**All mobile platforms:**
+```bash
+./build-all.sh    # Builds Android + iOS (macOS only for iOS)
+```
+
+### Platform Notes
+
+**Windows:**
+- **Native DLL**: Full Bluetooth via Kotlin/Native C interop. No JVM required. **Best for native desktop apps** (C#, C++, WinUI3). See [WINDOWS_NATIVE_DLL_GUIDE.md](docs/WINDOWS_NATIVE_DLL_GUIDE.md)
+- **JAR**: Full Bluetooth via JVM + JNA. Requires JRE 11+. **Best for JVM applications.**
+- Both provide identical Bluetooth functionality
+- DLL can be used via P/Invoke from C#, C++, Electron
+- JAR can be used from C# MAUI (see [CSHARP_MAUI_INTEGRATION.md](docs/CSHARP_MAUI_INTEGRATION.md))
 
 **Troubleshooting:**
-- If build fails with cache issues, use: `.\build-native-dll.ps1 -Clean`
+- Cache issues with Native DLL: `.\build-native-dll.ps1 -Clean`
+- See [BUILD_SCRIPTS_REFERENCE.md](BUILD_SCRIPTS_REFERENCE.md) for all build options
 
 ## Usage
 

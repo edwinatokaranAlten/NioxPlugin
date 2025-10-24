@@ -2,7 +2,9 @@
 
 This document provides a quick reference for all build scripts in the project.
 
-## 📋 Available Build Scripts
+## 📋 Individual Platform Build Scripts
+
+Each platform has its own dedicated build script for granular control:
 
 ### 1. **build-native-dll.ps1** (Windows PowerShell)
 **Purpose:** Build Windows Native DLL with full Bluetooth functionality
@@ -50,28 +52,100 @@ This document provides a quick reference for all build scripts in the project.
 
 ---
 
-### 2. **build-native-dll.sh** (Bash / WSL)
-**Purpose:** Build Windows Native DLL (Unix-style script)
+### 2. **build-windows-jar.ps1** (Windows PowerShell)
+**Purpose:** Build Windows JAR (JVM implementation)
 
 **Requirements:**
-- Windows environment (Git Bash, WSL, or native)
+- Windows 10/11 (can also build on macOS/Linux)
 - JDK 11+
-- MinGW-w64 toolchain
 
 **Usage:**
-```bash
-./build-native-dll.sh
+```powershell
+.\build-windows-jar.ps1
 ```
 
 **Output:**
-- `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
+- `nioxplugin\build\outputs\windows\niox-communication-plugin-windows-1.0.0.jar`
 
-**Note:** This is primarily for reference. Native Windows build is preferred over WSL.
+**Features:**
+- ✅ Clean build process
+- ✅ JVM + JNA implementation
+- ✅ Automatic verification
+- ✅ Usage recommendations
+- ✅ Next steps guidance
+
+**What it builds:**
+- Windows JAR (requires JRE 11+)
+- Full Bluetooth functionality via JNA
+- ~2MB size
+
+**Use for:**
+- JVM-based applications (Kotlin, Java)
+- Cross-platform JVM apps
+- When JRE is bundled with your app
 
 ---
 
-### 3. **build-all-windows.ps1** (Windows PowerShell)
-**Purpose:** Build ALL Windows implementations in one command
+### 3. **build-android.sh** (Bash)
+**Purpose:** Build Android AAR
+
+**Requirements:**
+- JDK 11+
+- Android SDK with API level 34
+
+**Usage:**
+```bash
+./build-android.sh
+```
+
+**Output:**
+- `nioxplugin/build/outputs/aar/nioxplugin-release.aar`
+
+**Features:**
+- ✅ Clean build process
+- ✅ Automatic verification
+- ✅ Size reporting
+- ✅ Integration instructions
+
+**Use for:**
+- Android applications
+- Android libraries
+
+---
+
+### 4. **build-ios.sh** (Bash)
+**Purpose:** Build iOS XCFramework
+
+**Requirements:**
+- macOS with Xcode 14.0+
+- JDK 11+
+
+**Usage:**
+```bash
+./build-ios.sh
+```
+
+**Output:**
+- `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework`
+
+**Features:**
+- ✅ macOS platform check
+- ✅ Clean build process
+- ✅ Automatic verification
+- ✅ Xcode integration instructions
+
+**Use for:**
+- iOS applications
+- iOS frameworks
+
+---
+
+## 📋 Aggregate Build Scripts
+
+These scripts call the individual platform scripts to build multiple targets:
+
+### 5. **build-all-windows.ps1** (Windows PowerShell)
+**Purpose:** Build ALL Windows implementations by calling individual scripts
 
 **Requirements:**
 - Windows 10/11
@@ -83,31 +157,32 @@ This document provides a quick reference for all build scripts in the project.
 .\build-all-windows.ps1
 ```
 
+**What it does:**
+- Calls `build-native-dll.ps1` for Native DLL
+- Calls `build-windows-jar.ps1` for JAR
+- Provides comprehensive build summary
+- Tracks success/failure of each
+
 **Output:**
 - `nioxplugin\build\outputs\windows\NioxCommunicationPlugin.dll` (Native DLL)
 - `nioxplugin\build\outputs\windows\niox-communication-plugin-windows-1.0.0.jar` (JAR)
 
 **Features:**
-- ✅ Builds both implementations
-- ✅ Parallel build process
+- ✅ Builds both Windows implementations
 - ✅ Comprehensive build summary
 - ✅ Success/failure tracking
 - ✅ Usage recommendations
-- ✅ Size comparisons
-
-**What it builds:**
-1. Native DLL (Kotlin/Native + C interop)
-2. JAR (JVM + JNA)
+- ✅ Next steps guidance
 
 ---
 
-### 4. **build-all.sh** (macOS / Linux)
-**Purpose:** Build Android AAR and iOS XCFramework
+### 6. **build-all.sh** (Bash)
+**Purpose:** Build ALL mobile platforms by calling individual scripts
 
 **Requirements:**
-- macOS (for iOS)
+- macOS (for iOS builds)
 - JDK 11+
-- Android SDK (for Android)
+- Android SDK
 - Xcode 14.0+ (for iOS)
 
 **Usage:**
@@ -115,83 +190,69 @@ This document provides a quick reference for all build scripts in the project.
 ./build-all.sh
 ```
 
+**What it does:**
+- Calls `build-android.sh` for Android AAR
+- Calls `build-ios.sh` for iOS XCFramework (macOS only)
+- Provides comprehensive build summary
+- Tracks success/failure of each
+
 **Output:**
 - `nioxplugin/build/outputs/aar/nioxplugin-release.aar` (Android)
 - `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework` (iOS)
 
-**Note:** Windows builds are not included (requires Windows host)
-
----
-
-### 5. **build-windows-full.ps1** (Windows PowerShell)
-**Purpose:** Build Windows DLL via JAR + IKVM conversion
-
-**Requirements:**
-- Windows 10/11
-- JDK 11+
-- .NET SDK
-- IKVM (auto-installed if needed)
-
-**Usage:**
-```powershell
-.\build-windows-full.ps1
-```
-
-**Output:**
-- `nioxplugin\build\outputs\windows\NioxPlugin.dll` (via IKVM)
-- `nioxplugin\build\outputs\windows\niox-communication-plugin-windows-1.0.0.jar` (source JAR)
-
-**What it builds:**
-- Converts Java JAR to .NET DLL using IKVM
-- For advanced .NET integration scenarios
-
-**Note:** This is an alternative approach. For native apps, use `build-native-dll.ps1` instead.
+**Note:** iOS build requires macOS. On other platforms, only Android will be built.
 
 ---
 
 ## 🎯 Which Script Should I Use?
 
-### For Windows Native Development (C#, C++, WinUI3):
+### For Individual Platforms:
+
+**Windows Native DLL:**
 ```powershell
-# Best choice - builds native DLL only
-.\build-native-dll.ps1
-
-# Or build everything
-.\build-all-windows.ps1
+.\build-native-dll.ps1           # Normal build
+.\build-native-dll.ps1 -Clean    # Clean build
 ```
 
-### For JVM-Based Applications (Kotlin, Java):
-```bash
-# Build JAR only
-.\gradlew :nioxplugin:buildWindowsJar
-```
-
-### For Mobile Development (Android + iOS):
-```bash
-# On macOS
-./build-all.sh
-```
-
-### For Complete Project Build:
+**Windows JAR:**
 ```powershell
-# On Windows (all Windows implementations)
-.\build-all-windows.ps1
+.\build-windows-jar.ps1
+```
 
-# On macOS (Android + iOS)
-./build-all.sh
+**Android AAR:**
+```bash
+./build-android.sh
+```
+
+**iOS XCFramework:**
+```bash
+./build-ios.sh    # Requires macOS
+```
+
+### For Multiple Platforms:
+
+**All Windows implementations:**
+```powershell
+.\build-all-windows.ps1    # Builds DLL + JAR
+```
+
+**All mobile platforms:**
+```bash
+./build-all.sh    # Builds Android + iOS (macOS only for iOS)
 ```
 
 ---
 
 ## 📊 Build Script Comparison
 
-| Script | Platform | Outputs | Time | Complexity |
-|--------|----------|---------|------|------------|
-| `build-native-dll.ps1` | Windows | Native DLL | ~30-60s | Medium |
-| `build-all-windows.ps1` | Windows | DLL + JAR | ~60-90s | Medium |
-| `build-all.sh` | macOS | AAR + XCF | ~2-3min | Medium |
-| `build-windows-full.ps1` | Windows | IKVM DLL | ~2-3min | High |
-| Direct Gradle | Any | Specific | ~30s | Low |
+| Script | Platform | Output | Time | Type |
+|--------|----------|--------|------|------|
+| `build-native-dll.ps1` | Windows | Native DLL | ~30-60s | Individual |
+| `build-windows-jar.ps1` | Windows | JAR | ~30-60s | Individual |
+| `build-android.sh` | Any | AAR | ~1-2min | Individual |
+| `build-ios.sh` | macOS | XCFramework | ~1-2min | Individual |
+| `build-all-windows.ps1` | Windows | DLL + JAR | ~1-2min | Aggregate |
+| `build-all.sh` | Any/macOS | AAR + XCF | ~2-4min | Aggregate |
 
 ---
 
@@ -222,18 +283,18 @@ This document provides a quick reference for all build scripts in the project.
 
 ### Getting Help
 
-1. Check the specific build guide:
-   - Native DLL: [BUILD_AND_TEST_WINDOWS_NATIVE.md](BUILD_AND_TEST_WINDOWS_NATIVE.md)
-   - Windows Full: [docs/WINDOWS_NATIVE_DLL_GUIDE.md](docs/WINDOWS_NATIVE_DLL_GUIDE.md)
-
-2. Use built-in help:
+1. Use built-in help:
    ```powershell
    .\build-native-dll.ps1 -Help
    ```
 
+2. Check the specific build guide:
+   - Native DLL: [BUILD_AND_TEST_WINDOWS_NATIVE.md](BUILD_AND_TEST_WINDOWS_NATIVE.md)
+   - Windows DLL Guide: [docs/WINDOWS_NATIVE_DLL_GUIDE.md](docs/WINDOWS_NATIVE_DLL_GUIDE.md)
+
 3. Verify prerequisites are installed
 
-4. Try direct Gradle commands first:
+4. Try direct Gradle commands:
    ```bash
    .\gradlew :nioxplugin:tasks
    ```
@@ -245,27 +306,27 @@ This document provides a quick reference for all build scripts in the project.
 ### First Time Setup
 
 1. **Clone the repository**
+
 2. **Install prerequisites:**
    - JDK 11+
-   - Windows SDK (for native DLL)
+   - Windows SDK (for Windows native DLL)
    - Android SDK (for Android builds)
-   - Xcode (for iOS builds)
+   - Xcode 14.0+ (for iOS builds on macOS)
 
-3. **Choose your target platform:**
+3. **Choose your build script:**
 
-   **For Windows Native Apps:**
+   **Individual Platform Builds:**
    ```powershell
-   .\build-native-dll.ps1
+   .\build-native-dll.ps1      # Windows Native DLL
+   .\build-windows-jar.ps1     # Windows JAR
+   ./build-android.sh          # Android AAR
+   ./build-ios.sh              # iOS XCFramework (macOS)
    ```
 
-   **For Everything on Windows:**
+   **Multiple Platform Builds:**
    ```powershell
-   .\build-all-windows.ps1
-   ```
-
-   **For Mobile (macOS):**
-   ```bash
-   ./build-all.sh
+   .\build-all-windows.ps1     # All Windows (DLL + JAR)
+   ./build-all.sh              # All Mobile (Android + iOS)
    ```
 
 ### Verify Build Success
