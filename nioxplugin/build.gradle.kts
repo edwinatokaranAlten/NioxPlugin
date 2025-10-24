@@ -33,12 +33,27 @@ kotlin {
         }
     }
 
-    // Windows JVM Target (builds a JAR with JNA for actual Bluetooth functionality)
+    // Windows JVM Target (builds a JAR with JNA for Bluetooth Classic functionality)
     jvm("windows") {
         compilations.all {
             kotlinOptions {
                 jvmTarget = "11"
             }
+        }
+        attributes {
+            attribute(Attribute.of("com.niox.bluetooth.type", String::class.java), "classic")
+        }
+    }
+
+    // Windows WinRT Target (builds a JAR with WinRT for full BLE support)
+    jvm("windowsWinRt") {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "11"
+            }
+        }
+        attributes {
+            attribute(Attribute.of("com.niox.bluetooth.type", String::class.java), "winrt")
         }
     }
 
@@ -57,14 +72,15 @@ kotlin {
                 baseName = "NioxCommunicationPlugin"
                 // Link against Windows Bluetooth libraries
                 linkerOpts("-lBthprops", "-lKernel32")
+            }
+        }
 
-                // Export symbols with C linkage (not mangled C++ names)
-                export(project(":nioxplugin"))
-
-                // Add compiler flags to ensure proper C exports
+        // CRITICAL: This tells Kotlin/Native to export the @CName functions
+        compilations.getByName("main") {
+            kotlinOptions {
+                // Export all functions marked with @CName as C exports
                 freeCompilerArgs += listOf(
-                    "-Xexport-kdoc",
-                    "-linker-option", "--export-all-symbols"
+                    "-Xexport-kdoc"
                 )
             }
         }
@@ -98,8 +114,16 @@ kotlin {
             }
         }
 
-        // JVM Windows source set (with JNA for Bluetooth)
+        // JVM Windows source set (with JNA for Bluetooth Classic)
         val windowsMain by getting {
+            dependencies {
+                implementation("net.java.dev.jna:jna:5.13.0")
+                implementation("net.java.dev.jna:jna-platform:5.13.0")
+            }
+        }
+
+        // WinRT Windows source set (with JNA for BLE support via WinRT)
+        val windowsWinRtMain by getting {
             dependencies {
                 implementation("net.java.dev.jna:jna:5.13.0")
                 implementation("net.java.dev.jna:jna-platform:5.13.0")
@@ -131,7 +155,7 @@ android {
     }
 }
 
-// Task to build Windows JVM JAR with all dependencies
+// Task to build Windows JVM JAR with all dependencies (Bluetooth Classic)
 tasks.register<Jar>("buildWindowsJar") {
     dependsOn("windowsJar")
     archiveBaseName.set("niox-communication-plugin-windows")
@@ -142,6 +166,25 @@ tasks.register<Jar>("buildWindowsJar") {
     manifest {
         attributes["Main-Class"] = "com.niox.nioxplugin.cli.MainKt"
     }
+
+    // Copy to outputs directory
+    doLast {
+        val buildDir = layout.buildDirectory.get().asFile
+        val outputDir = file("$buildDir/outputs/windows")
+        outputDir.mkdirs()
+        copy {
+            from(archiveFile.get().asFile)
+            into(outputDir)
+        }
+    }
+}
+
+// Task to build Windows WinRT JAR with BLE support
+tasks.register<Jar>("buildWindowsWinRtJar") {
+    dependsOn("windowsWinRtJar")
+    archiveBaseName.set("niox-communication-plugin-windows-winrt")
+    archiveVersion.set(version.toString())
+    from(tasks.named("windowsWinRtJar"))
 
     // Copy to outputs directory
     doLast {

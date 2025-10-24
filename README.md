@@ -61,14 +61,20 @@ Output: `nioxplugin/build/outputs/aar/nioxplugin-release.aar`
 ```
 Output: `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework`
 
-**Windows Native DLL** (RECOMMENDED for C#, C++, WinUI3):
+**Windows WinRT JAR** (RECOMMENDED - Full BLE support):
+```powershell
+.\build-windows-winrt-jar.ps1
+```
+Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows-winrt-1.0.0.jar`
+
+**Windows Native DLL** (for C#, C++, WinUI3 - Bluetooth Classic):
 ```powershell
 .\build-native-dll.ps1           # Normal build
 .\build-native-dll.ps1 -Clean    # Clean build (cache issues)
 ```
 Output: `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
 
-**Windows JAR** (for JVM applications):
+**Windows JAR** (for JVM applications - Bluetooth Classic):
 ```powershell
 .\build-windows-jar.ps1
 ```
@@ -210,6 +216,8 @@ Task {
 
 ### Windows Usage
 
+**Kotlin/Java (using WinRT JAR - RECOMMENDED for BLE):**
+
 ```kotlin
 import com.niox.nioxplugin.*
 
@@ -219,12 +227,18 @@ val plugin = createNioxCommunicationPlugin()
 // Check Bluetooth state
 val state = plugin.checkBluetoothState()
 
-// Scan for devices (returns list)
+// Scan for devices (returns list with RSSI values)
 val devices = plugin.scanForDevices(scanDurationMs = 10000)
 devices.forEach { device ->
     println("Found device: ${device.name} - ${device.address}")
+    println("  RSSI: ${device.rssi} dBm")  // Available in WinRT implementation
 }
 ```
+
+**Note:** Windows has three implementation options:
+- **WinRT JAR** (Recommended) - Full BLE support with RSSI values - See [WINDOWS_WINRT_IMPLEMENTATION.md](WINDOWS_WINRT_IMPLEMENTATION.md)
+- **Classic JAR** - Bluetooth Classic only, no RSSI - See [USE_JVM_IMPLEMENTATION.md](USE_JVM_IMPLEMENTATION.md)
+- **Native DLL** - Bluetooth Classic, for C# integration - See [WINDOWS_NATIVE_DLL_GUIDE.md](WINDOWS_NATIVE_DLL_GUIDE.md)
 
 ## API Reference
 
