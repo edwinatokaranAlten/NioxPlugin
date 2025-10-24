@@ -202,16 +202,14 @@ class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
             val bytes = ByteArray(6)
             // The address is stored in the ullLong field as a 48-bit value
             // We need to extract bytes in reverse order (little-endian)
-            address.useContents {
-                // ullLong contains the 48-bit Bluetooth address
-                val addrValue = ullLong.toLong()
-                for (i in 0..5) {
-                    bytes[5 - i] = ((addrValue shr (i * 8)) and 0xFF).toByte()
-                }
+            val addrValue = address.ullLong.toLong()
+            for (i in 0..5) {
+                bytes[5 - i] = ((addrValue shr (i * 8)) and 0xFF).toByte()
             }
 
             bytes.joinToString(":") { byte ->
-                String.format("%02X", byte.toUByte().toInt())
+                val hex = byte.toUByte().toInt().toString(16).uppercase()
+                if (hex.length == 1) "0$hex" else hex
             }
         } catch (e: Exception) {
             "00:00:00:00:00:00"

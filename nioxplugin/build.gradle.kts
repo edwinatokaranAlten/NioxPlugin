@@ -129,6 +129,11 @@ tasks.register<Jar>("buildWindowsJar") {
     archiveVersion.set(version.toString())
     from(tasks.named("windowsJar"))
 
+    // Add manifest with Main-Class for CLI usage
+    manifest {
+        attributes["Main-Class"] = "com.niox.nioxplugin.cli.MainKt"
+    }
+
     // Copy to outputs directory
     doLast {
         val buildDir = layout.buildDirectory.get().asFile
