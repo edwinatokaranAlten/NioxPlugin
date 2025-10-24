@@ -4,7 +4,6 @@ import kotlinx.coroutines.*
 import kotlinx.cinterop.*
 import platform.windows.bluetooth.*
 import platform.windows.*
-import platform.windows.GetTickCount64
 
 /**
  * Windows Native (mingwX64) implementation using C interop to call Windows Bluetooth APIs directly.
@@ -129,13 +128,14 @@ class WindowsNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
                         val deviceFindHandle = BluetoothFindFirstDevice(searchParams.ptr, deviceInfo.ptr)
 
                         if (deviceFindHandle != null && deviceFindHandle != INVALID_HANDLE_VALUE) {
-                            val startTime = GetTickCount64()?.toLong() ?: 0L
+                            @Suppress("DEPRECATION")
+                            val startTime = kotlin.system.getTimeMillis()
 
                             try {
                                 do {
                                     // Check if scan duration expired
-                                    val currentTime = GetTickCount64()?.toLong() ?: 0L
-                                    if (currentTime - startTime >= scanDurationMs) {
+                                    @Suppress("DEPRECATION")
+                                    if (kotlin.system.getTimeMillis() - startTime >= scanDurationMs) {
                                         break
                                     }
 

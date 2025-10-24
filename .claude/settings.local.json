@@ -23,7 +23,9 @@
       "Bash(mkdir:*)",
       "Bash(git reset:*)",
       "Bash(git rm:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(jar xf:*)",
+      "Bash(java -jar niox-communication-plugin-windows-1.0.0.jar:*)"
     ],
     "deny": [],
     "ask": []
