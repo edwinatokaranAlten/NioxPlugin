@@ -57,7 +57,7 @@ kotlin {
         }
     }
 
-    // Windows Native Target (builds a DLL via Kotlin/Native with full Bluetooth functionality)
+    // Windows Native Target - Classic Bluetooth (builds a DLL via Kotlin/Native)
     mingwX64("windowsNative") {
         compilations.getByName("main") {
             cinterops {
@@ -79,6 +79,61 @@ kotlin {
         compilations.getByName("main") {
             kotlinOptions {
                 // Export all functions marked with @CName as C exports
+                freeCompilerArgs += listOf(
+                    "-Xexport-kdoc"
+                )
+            }
+        }
+    }
+
+    // Windows WinRT Native Target - BLE Support (builds a DLL with WinRT BLE APIs)
+    mingwX64("windowsWinRtNative") {
+        compilations.getByName("main") {
+            cinterops {
+                val winrtBle by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/winrtBle.def"))
+                    packageName("platform.winrt.ble")
+
+                    // Include path for C++ headers
+                    includeDirs.headerFilterOnly(
+                        project.file("src/nativeInterop/cpp")
+                    )
+                }
+            }
+
+            // Compile C++ WinRT wrapper
+            val compileCpp by tasks.creating(Exec::class) {
+                workingDir = project.file("src/nativeInterop/cpp")
+                commandLine("cl.exe",
+                    "/EHsc", "/std:c++17", "/MD",
+                    "/I.",
+                    "/c", "winrt_ble_wrapper.cpp",
+                    "/Fo:winrt_ble_wrapper.obj")
+            }
+
+            // Make compilation depend on C++ compilation
+            tasks.named("compileKotlinWindowsWinRtNative") {
+                dependsOn(compileCpp)
+            }
+        }
+
+        binaries {
+            sharedLib {
+                baseName = "NioxCommunicationPluginWinRT"
+                // Link against WinRT libraries and the C++ object file
+                linkerOpts(
+                    "-L${project.file("src/nativeInterop/cpp")}",
+                    "-lwindowsapp",
+                    "-lole32",
+                    "-loleaut32",
+                    "-lruntimeobject"
+                )
+            }
+        }
+
+        // Export @CName functions
+        compilations.getByName("main") {
+            kotlinOptions {
                 freeCompilerArgs += listOf(
                     "-Xexport-kdoc"
                 )
@@ -130,8 +185,11 @@ kotlin {
             }
         }
 
-        // Native Windows source set (no extra deps for stub)
+        // Native Windows source set (Classic Bluetooth)
         val windowsNativeMain by getting
+
+        // WinRT Native Windows source set (BLE support)
+        val windowsWinRtNativeMain by getting
     }
 }
 
@@ -198,12 +256,22 @@ tasks.register<Jar>("buildWindowsWinRtJar") {
     }
 }
 
-// Task to copy native Windows DLL into outputs directory (fully functional with Bluetooth)
+// Task to copy native Windows DLL into outputs directory (Classic Bluetooth)
 tasks.register<Copy>("buildWindowsNativeDll") {
     // Build must run on Windows host; link task name for mingwX64 shared
     dependsOn("linkReleaseSharedWindowsNative")
     val dllName = "NioxCommunicationPlugin.dll"
     val buildDir = layout.buildDirectory.get().asFile
     from(file("$buildDir/bin/windowsNative/releaseShared/$dllName"))
+    into(file("$buildDir/outputs/windows"))
+}
+
+// Task to copy WinRT native Windows DLL into outputs directory (BLE Support)
+tasks.register<Copy>("buildWindowsWinRtNativeDll") {
+    // Build must run on Windows host; link task name for mingwX64 shared
+    dependsOn("linkReleaseSharedWindowsWinRtNative")
+    val dllName = "NioxCommunicationPluginWinRT.dll"
+    val buildDir = layout.buildDirectory.get().asFile
+    from(file("$buildDir/bin/windowsWinRtNative/releaseShared/$dllName"))
     into(file("$buildDir/outputs/windows"))
 }

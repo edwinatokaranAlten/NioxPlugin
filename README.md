@@ -61,20 +61,28 @@ Output: `nioxplugin/build/outputs/aar/nioxplugin-release.aar`
 ```
 Output: `nioxplugin/build/XCFrameworks/release/NioxCommunicationPlugin.xcframework`
 
-**Windows WinRT JAR** (RECOMMENDED - Full BLE support):
+**Windows WinRT JAR** (RECOMMENDED for Kotlin/Java - Full BLE support):
 ```powershell
 .\build-windows-winrt-jar.ps1
 ```
 Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows-winrt-1.0.0.jar`
 
-**Windows Native DLL** (for C#, C++, WinUI3 - Bluetooth Classic):
+**Windows WinRT DLL** (RECOMMENDED for C#/C++ - Full BLE support):
+```powershell
+.\build-winrt-native-dll.ps1           # Normal build
+.\build-winrt-native-dll.ps1 -Clean    # Clean build (cache issues)
+```
+Output: `nioxplugin/build/outputs/windows/NioxCommunicationPluginWinRT.dll`
+**Note:** Must build on Windows with Visual Studio 2019/2022 and C++/WinRT
+
+**Windows Native DLL** (Legacy - Bluetooth Classic):
 ```powershell
 .\build-native-dll.ps1           # Normal build
 .\build-native-dll.ps1 -Clean    # Clean build (cache issues)
 ```
 Output: `nioxplugin/build/outputs/windows/NioxCommunicationPlugin.dll`
 
-**Windows JAR** (for JVM applications - Bluetooth Classic):
+**Windows JAR** (Legacy - Bluetooth Classic):
 ```powershell
 .\build-windows-jar.ps1
 ```
@@ -235,10 +243,11 @@ devices.forEach { device ->
 }
 ```
 
-**Note:** Windows has three implementation options:
-- **WinRT JAR** (Recommended) - Full BLE support with RSSI values - See [WINDOWS_WINRT_IMPLEMENTATION.md](WINDOWS_WINRT_IMPLEMENTATION.md)
-- **Classic JAR** - Bluetooth Classic only, no RSSI - See [USE_JVM_IMPLEMENTATION.md](USE_JVM_IMPLEMENTATION.md)
-- **Native DLL** - Bluetooth Classic, for C# integration - See [WINDOWS_NATIVE_DLL_GUIDE.md](WINDOWS_NATIVE_DLL_GUIDE.md)
+**Note:** Windows has four implementation options:
+- **WinRT JAR** (Recommended for Kotlin/Java) - Full BLE support with RSSI values - See [WINDOWS_WINRT_IMPLEMENTATION.md](WINDOWS_WINRT_IMPLEMENTATION.md)
+- **WinRT DLL** (Recommended for C#/C++) - Full BLE support with RSSI values - See [WINDOWS_WINRT_DLL_GUIDE.md](WINDOWS_WINRT_DLL_GUIDE.md)
+- **Classic JAR** (Legacy) - Bluetooth Classic only, no RSSI - See [USE_JVM_IMPLEMENTATION.md](USE_JVM_IMPLEMENTATION.md)
+- **Classic DLL** (Legacy) - Bluetooth Classic, for C# integration - See [WINDOWS_NATIVE_DLL_GUIDE.md](WINDOWS_NATIVE_DLL_GUIDE.md)
 
 ## API Reference
 

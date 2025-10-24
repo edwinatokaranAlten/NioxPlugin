@@ -1,0 +1,11 @@
+headers = winrt_ble_wrapper.h
+headerFilter = winrt_ble_wrapper.h
+package = platform.winrt.ble
+
+compilerOpts.mingw = -I../cpp -DUNICODE -D_UNICODE
+linkerOpts.mingw = -L. -lwindowsapp -lole32 -loleaut32 -lruntimeobject
+
+---
+
+// Additional type definitions if needed
+#include "winrt_ble_wrapper.h"
