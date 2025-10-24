@@ -63,6 +63,13 @@
                 Content="Refresh Status"
                 Click="RefreshStatusButton_Click"
                 MinWidth="150"/>
+            <Button
+                x:Name="DiagnosticsButton"
+                Content="Run DLL Diagnostics"
+                Click="DiagnosticsButton_Click"
+                MinWidth="150"
+                Background="#E81123"
+                Foreground="White"/>
             <CheckBox
                 x:Name="NioxOnlyCheckBox"
                 Content="NIOX Devices Only"

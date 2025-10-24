@@ -141,6 +141,47 @@ namespace NioxBluetoothApp
             await CheckBluetoothStatusAsync();
         }
 
+        private async void DiagnosticsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                StatusBarText.Text = "Running DLL diagnostics...";
+
+                // Run diagnostics on background thread
+                string diagnosticsReport = await System.Threading.Tasks.Task.Run(() =>
+                {
+                    return DllDiagnostics.RunDiagnostics();
+                });
+
+                // Show results in a dialog
+                var dialog = new ContentDialog
+                {
+                    Title = "DLL Diagnostics Report",
+                    Content = new ScrollViewer
+                    {
+                        Content = new TextBlock
+                        {
+                            Text = diagnosticsReport,
+                            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas"),
+                            FontSize = 12,
+                            TextWrapping = TextWrapping.Wrap,
+                            IsTextSelectionEnabled = true
+                        },
+                        MaxHeight = 500
+                    },
+                    CloseButtonText = "Close",
+                    XamlRoot = this.Content.XamlRoot
+                };
+
+                await dialog.ShowAsync();
+                StatusBarText.Text = "Diagnostics complete";
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Diagnostics failed: {ex.Message}");
+            }
+        }
+
         private void ShowError(string message)
         {
             StatusBarText.Text = message;

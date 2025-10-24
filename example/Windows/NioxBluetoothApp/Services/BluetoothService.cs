@@ -7,8 +7,17 @@ namespace NioxBluetoothApp.Services
 {
     public class BluetoothService
     {
+        // Use full path or relative path to DLL
+        // The DLL should be in the same directory as the executable
         private const string DllName = "NioxCommunicationPlugin.dll";
         private static bool _initialized = false;
+
+        // Add DLL directory to search path
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool SetDllDirectory(string lpPathName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
 
         #region P/Invoke Declarations
 
@@ -78,6 +87,31 @@ namespace NioxBluetoothApp.Services
         {
             if (!_initialized)
             {
+                // Try to preload the DLL to get better error messages
+                try
+                {
+                    // Get the application directory
+                    string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string dllPath = System.IO.Path.Combine(appDir, DllName);
+
+                    System.Diagnostics.Debug.WriteLine($"Looking for DLL at: {dllPath}");
+                    System.Diagnostics.Debug.WriteLine($"DLL exists: {System.IO.File.Exists(dllPath)}");
+
+                    // Try to load the DLL explicitly
+                    IntPtr handle = LoadLibrary(dllPath);
+                    if (handle == IntPtr.Zero)
+                    {
+                        int errorCode = Marshal.GetLastWin32Error();
+                        throw new Exception($"Failed to load DLL. Error code: 0x{errorCode:X}. " +
+                            $"Make sure the DLL and its dependencies are in: {appDir}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"DLL preload failed: {ex.Message}");
+                    // Continue anyway, let P/Invoke try
+                }
+
                 int result = NioxInit();
                 if (result == 0)
                 {
