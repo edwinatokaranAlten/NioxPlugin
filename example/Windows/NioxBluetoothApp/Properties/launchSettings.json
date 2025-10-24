@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "NioxBluetoothApp (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "NioxBluetoothApp (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

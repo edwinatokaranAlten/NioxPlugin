@@ -1,0 +1,1 @@
+C:\Users\eatokaran\Desktop\NIOXWindowsApp\NioxBluetoothApp\NioxBluetoothApp.csproj;x64

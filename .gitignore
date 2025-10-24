@@ -12,7 +12,8 @@ build/
 *.ipr
 out/
 !**/src/main/**/out/
-!**/src/test/**/out/
+!**/src/test/**/out/+
+!**/example/Windows/NioxBluetoothApp/.vs/
 
 # Android Studio
 .DS_Store
@@ -44,3 +45,15 @@ DerivedData/
 *.framework
 *.dll
 *.jar
+
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/CopilotIndices/17.14.1290.42047/CodeChunks.db
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/CopilotIndices/17.14.1290.42047/CodeChunks.db-shm
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/CopilotIndices/17.14.1290.42047/CodeChunks.db-wal
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/CopilotIndices/17.14.1290.42047/SemanticSymbols.db
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/CopilotIndices/17.14.1290.42047/SemanticSymbols.db-shm
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/CopilotIndices/17.14.1290.42047/SemanticSymbols.db-wal
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/FileContentIndex/1ab00cb2-1866-405f-8930-891ea0a3c625.vsidx
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/FileContentIndex/19350f51-f629-413b-8d31-dbc757b1334e.vsidx
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/FileContentIndex/b3577bb4-6739-48f6-9b3a-0e10ffb618ab.vsidx
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/FileContentIndex/ed386a47-445f-4455-862b-4945c76cc203.vsidx
+example/Windows/NioxBluetoothApp/.vs/NioxBluetoothApp/FileContentIndex/f598a5f5-a69e-40b6-98d2-22634d6ba468.vsidx
