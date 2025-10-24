@@ -57,6 +57,15 @@ kotlin {
                 baseName = "NioxCommunicationPlugin"
                 // Link against Windows Bluetooth libraries
                 linkerOpts("-lBthprops", "-lKernel32")
+
+                // Export symbols with C linkage (not mangled C++ names)
+                export(project(":nioxplugin"))
+
+                // Add compiler flags to ensure proper C exports
+                freeCompilerArgs += listOf(
+                    "-Xexport-kdoc",
+                    "-linker-option", "--export-all-symbols"
+                )
             }
         }
     }

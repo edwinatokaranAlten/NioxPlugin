@@ -150,7 +150,18 @@ namespace NioxBluetoothApp
                 // Run diagnostics on background thread
                 string diagnosticsReport = await System.Threading.Tasks.Task.Run(() =>
                 {
-                    return DllDiagnostics.RunDiagnostics();
+                    string basicDiag = DllDiagnostics.RunDiagnostics();
+
+                    // Add export analysis
+                    string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string dllPath = System.IO.Path.Combine(appDir, "NioxCommunicationPlugin.dll");
+
+                    if (System.IO.File.Exists(dllPath))
+                    {
+                        basicDiag += "\n\n" + DllExportChecker.ListExports(dllPath);
+                    }
+
+                    return basicDiag;
                 });
 
                 // Show results in a dialog
