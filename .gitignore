@@ -12,7 +12,8 @@ build/
 *.ipr
 out/
 !**/src/main/**/out/
-!**/src/test/**/out/
+!**/src/test/**/out/+
+!**/example/Windows/NioxBluetoothApp/.vs/
 
 # Android Studio
 .DS_Store
@@ -44,3 +45,40 @@ DerivedData/
 *.framework
 *.dll
 *.jar
+
+# Visual Studio local cache
+example/Windows/NioxBluetoothApp/.vs/*
+
+# Build outputs (already covered, detailed paths not needed)
+example/Windows/NioxBluetoothApp/bin/*
+example/Windows/NioxBluetoothApp/obj/*
+example/Windows/NioxBluetoothApp/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/MainWindow.xbf
+example/Windows/NioxBluetoothApp/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.build.appxrecipe
+example/Windows/NioxBluetoothApp/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.exe
+example/Windows/NioxBluetoothApp/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.pdb
+example/Windows/NioxBluetoothApp/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/resources.pri
+example/Windows/NioxBluetoothApp/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/AppX/NioxBluetoothApp.exe
+example/Windows/NioxBluetoothApp/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/AppX/resources.pri
+example/Windows/NioxBluetoothApp/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/AppX/vs.appxrecipe
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/App.g.cs
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/App.g.i.cs
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/apphost.exe
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/filtered.layout.resfiles
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/filtered.layout.resfiles.intermediate
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/MainWindow.g.cs
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/MainWindow.g.i.cs
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/MainWindow.xaml
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/MainWindow.xbf
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.AssemblyInfo.cs
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.AssemblyInfoInputs.cache
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.csproj.AssemblyReference.cache
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.csproj.CoreCompileInputs.cache
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.csproj.FileListAbsolute.txt
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.csproj.IkvmFrameworkReference.cache
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.genruntimeconfig.cache
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/NioxBluetoothApp.pdb
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ProjectArchitectures.txt
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/unfiltered.layout.resfiles
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/unfiltered.layout.resfiles.intermediate
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/XamlSaveStateFile.xml
+example/Windows/NioxBluetoothApp/obj/x64/Debug/net8.0-windows10.0.19041.0/win-x64/embed/MainWindow.xbf
