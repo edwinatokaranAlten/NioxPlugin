@@ -23,21 +23,22 @@ Write-Host ""
 # Check for required tools
 Write-Host "Checking for required tools..." -ForegroundColor Yellow
 
-# Check for cl.exe (MSVC compiler)
+# Check for cl.exe (MSVC compiler) - Optional warning only
 $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue)
 if (-not $clPath) {
-    Write-Host "ERROR: MSVC compiler (cl.exe) not found!" -ForegroundColor Red
+    Write-Host "WARNING: MSVC compiler (cl.exe) not found in PATH!" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "Please install Visual Studio 2019 or later with:" -ForegroundColor Yellow
-    Write-Host "  - Desktop development with C++" -ForegroundColor White
-    Write-Host "  - Windows 10/11 SDK" -ForegroundColor White
-    Write-Host "  - C++/WinRT tools" -ForegroundColor White
+    Write-Host "Build may fail if not running from Developer Command Prompt." -ForegroundColor Yellow
+    Write-Host "If build fails, please:" -ForegroundColor Yellow
+    Write-Host "  1. Open 'Developer Command Prompt for VS 2022' or 'Developer PowerShell for VS 2022'" -ForegroundColor White
+    Write-Host "  2. Navigate to this directory" -ForegroundColor White
+    Write-Host "  3. Run this script again" -ForegroundColor White
     Write-Host ""
-    Write-Host "Then run this script from Developer Command Prompt for VS" -ForegroundColor Yellow
-    exit 1
+    Write-Host "Continuing anyway..." -ForegroundColor Cyan
 }
-
-Write-Host "  √ MSVC compiler found: $($clPath.Path)" -ForegroundColor Green
+else {
+    Write-Host "  √ MSVC compiler found: $($clPath.Path)" -ForegroundColor Green
+}
 
 # Check for MinGW (for Kotlin/Native)
 $mingwPath = (Get-Command x86_64-w64-mingw32-gcc.exe -ErrorAction SilentlyContinue)
