@@ -130,6 +130,25 @@ fun cleanup() {
     globalPlugin = null
 }
 
+// Static string pointers for version and implementation (allocated once, never freed)
+private val versionStringPtr: CPointer<ByteVar> by lazy {
+    val str = "1.1.0-winrt"
+    val bytes = str.encodeToByteArray()
+    val ptr = nativeHeap.allocArray<ByteVar>(bytes.size + 1)
+    bytes.forEachIndexed { index, byte -> ptr[index] = byte }
+    ptr[bytes.size] = 0
+    ptr
+}
+
+private val implementationStringPtr: CPointer<ByteVar> by lazy {
+    val str = "winrt-ble"
+    val bytes = str.encodeToByteArray()
+    val ptr = nativeHeap.allocArray<ByteVar>(bytes.size + 1)
+    bytes.forEachIndexed { index, byte -> ptr[index] = byte }
+    ptr[bytes.size] = 0
+    ptr
+}
+
 /**
  * Get version string
  * Returns: Version string "1.1.0-winrt" (must NOT be freed)
@@ -137,7 +156,7 @@ fun cleanup() {
 @OptIn(ExperimentalForeignApi::class, ExperimentalNativeApi::class)
 @CName("niox_version")
 fun getVersion(): CPointer<ByteVar>? {
-    return "1.1.0-winrt".cstr.ptr
+    return versionStringPtr
 }
 
 /**
@@ -147,5 +166,5 @@ fun getVersion(): CPointer<ByteVar>? {
 @OptIn(ExperimentalForeignApi::class, ExperimentalNativeApi::class)
 @CName("niox_implementation")
 fun getImplementation(): CPointer<ByteVar>? {
-    return "winrt-ble".cstr.ptr
+    return implementationStringPtr
 }

@@ -84,29 +84,32 @@ class WindowsWinRtNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
                     // Determine if we should filter for NIOX devices only
                     val nioxOnly = if (serviceUuidFilter == NioxConstants.NIOX_SERVICE_UUID) 1 else 0
 
-                    // Define callback for device discovery
-                    val callback = staticCFunction<BLEDevice, COpaquePointer?, Unit> { device, userData ->
+                    // Define callback for device discovery (must match C signature)
+                    val callback = staticCFunction<CValue<BLEDevice>, COpaquePointer?, Unit> { deviceValue, userData ->
                         try {
-                            // Extract device information
-                            val name = device.name?.toKString()
-                            val address = device.address?.toKString()
-                            val rssi = if (device.hasRssi != 0) device.rssi else null
+                            // Access struct fields from CValue
+                            deviceValue.useContents {
+                                // Extract device information
+                                val name = this.name?.toKString()
+                                val address = this.address?.toKString()
+                                val rssi = if (this.hasRssi != 0) this.rssi else null
 
-                            if (address != null) {
-                                // Create BluetoothDevice object
-                                val btDevice = BluetoothDevice(
-                                    name = name,
-                                    address = address,
-                                    rssi = rssi,
-                                    serviceUuids = null, // Not available from C API
-                                    advertisingData = mapOf(
-                                        "isConnectable" to true
+                                if (address != null) {
+                                    // Create BluetoothDevice object
+                                    val btDevice = BluetoothDevice(
+                                        name = name,
+                                        address = address,
+                                        rssi = rssi,
+                                        serviceUuids = null, // Not available from C API
+                                        advertisingData = mapOf(
+                                            "isConnectable" to true
+                                        )
                                     )
-                                )
 
-                                // Store in discovered devices map
-                                userData?.asStableRef<MutableMap<String, BluetoothDevice>>()?.get()?.let { map ->
-                                    map[address] = btDevice
+                                    // Store in discovered devices map
+                                    userData?.asStableRef<MutableMap<String, BluetoothDevice>>()?.get()?.let { map ->
+                                        map[address] = btDevice
+                                    }
                                 }
                             }
                         } catch (e: Exception) {
