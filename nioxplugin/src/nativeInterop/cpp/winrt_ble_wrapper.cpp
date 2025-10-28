@@ -2,6 +2,7 @@
 // This provides a C API wrapper around Windows Runtime Bluetooth APIs
 
 #include "winrt_ble_wrapper.h"
+#include <windows.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Devices.Bluetooth.h>
@@ -46,7 +47,7 @@ char* hstring_to_cstring(const hstring& hstr) {
 // Helper: Format Bluetooth address
 char* format_bluetooth_address(uint64_t address) {
     char* addr_str = new char[18]; // XX:XX:XX:XX:XX:XX + null
-    sprintf_s(addr_str, 18, "%02X:%02X:%02X:%02X:%02X:%02X",
+    sprintf_s(addr_str, 18, "%02llX:%02llX:%02llX:%02llX:%02llX:%02llX",
         (address >> 40) & 0xFF,
         (address >> 32) & 0xFF,
         (address >> 24) & 0xFF,
@@ -111,7 +112,7 @@ int winrt_check_bluetooth_state() {
 
     try {
         // Get default Bluetooth adapter
-        auto adapter = Bluetooth::BluetoothAdapter::GetDefaultAsync().get();
+        auto adapter = BluetoothAdapter::GetDefaultAsync().get();
 
         if (adapter == nullptr) {
             return 2; // UNSUPPORTED
