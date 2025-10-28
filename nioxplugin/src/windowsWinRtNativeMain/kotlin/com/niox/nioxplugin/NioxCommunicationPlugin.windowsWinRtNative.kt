@@ -85,30 +85,32 @@ class WindowsWinRtNativeNioxCommunicationPlugin : NioxCommunicationPlugin {
                     val nioxOnly = if (serviceUuidFilter == NioxConstants.NIOX_SERVICE_UUID) 1 else 0
 
                     // Define callback for device discovery
-                    val callback = staticCFunction<CPointer<BLEDevice>?, COpaquePointer?, Unit> { devicePtr, userData ->
-                        devicePtr?.let { ptr ->
-                            val device = ptr.pointed
-
+                    val callback = staticCFunction<BLEDevice, COpaquePointer?, Unit> { device, userData ->
+                        try {
                             // Extract device information
                             val name = device.name?.toKString()
-                            val address = device.address?.toKString() ?: return@let
+                            val address = device.address?.toKString()
                             val rssi = if (device.hasRssi != 0) device.rssi else null
 
-                            // Create BluetoothDevice object
-                            val btDevice = BluetoothDevice(
-                                name = name,
-                                address = address,
-                                rssi = rssi,
-                                serviceUuids = null, // Not available from advertisement
-                                advertisingData = mapOf(
-                                    "isConnectable" to true
+                            if (address != null) {
+                                // Create BluetoothDevice object
+                                val btDevice = BluetoothDevice(
+                                    name = name,
+                                    address = address,
+                                    rssi = rssi,
+                                    serviceUuids = null, // Not available from C API
+                                    advertisingData = mapOf(
+                                        "isConnectable" to true
+                                    )
                                 )
-                            )
 
-                            // Store in discovered devices map (thread-safe within coroutine context)
-                            (userData?.asStableRef<MutableMap<String, BluetoothDevice>>()?.get())?.let { map ->
-                                map[address] = btDevice
+                                // Store in discovered devices map
+                                userData?.asStableRef<MutableMap<String, BluetoothDevice>>()?.get()?.let { map ->
+                                    map[address] = btDevice
+                                }
                             }
+                        } catch (e: Exception) {
+                            // Ignore callback errors
                         }
                     }
 

@@ -78,6 +78,8 @@ Output: `nioxplugin/build/outputs/windows/niox-communication-plugin-windows-winr
 Output: `nioxplugin/build/outputs/windows/NioxCommunicationPluginWinRT.dll`
 **Note:** Must build on Windows with Visual Studio 2019/2022 and C++/WinRT
 
+📖 **[Complete Windows DLL Guide](WINDOWS_DLL_COMPLETE_GUIDE.md)** - Comprehensive documentation with C#, C++, and Python examples
+
 ### Build Multiple Platforms
 
 **All mobile platforms:**
