@@ -22,7 +22,7 @@ using namespace Windows::Foundation;
 
 // Global state
 static bool g_initialized = false;
-static std::unique_ptr<BluetoothLEAdvertisementWatcher> g_watcher;
+static BluetoothLEAdvertisementWatcher g_watcher{ nullptr };
 static std::vector<BLEDevice> g_discovered_devices;
 static DeviceFoundCallback g_callback = nullptr;
 static void* g_user_data = nullptr;
@@ -82,10 +82,10 @@ int winrt_initialize() {
 void winrt_cleanup() {
     if (g_watcher) {
         try {
-            g_watcher->Stop();
+            g_watcher.Stop();
         }
         catch (...) {}
-        g_watcher.reset();
+        g_watcher = nullptr;
     }
 
     // Free discovered devices
@@ -163,13 +163,13 @@ int winrt_start_scan(int durationMs, int nioxOnly, DeviceFoundCallback callback,
         g_discovered_devices.clear();
 
         // Create watcher
-        g_watcher = std::make_unique<BluetoothLEAdvertisementWatcher>();
+        g_watcher = BluetoothLEAdvertisementWatcher();
 
         // Configure watcher
-        g_watcher->ScanningMode(BluetoothLEScanningMode::Active);
+        g_watcher.ScanningMode(BluetoothLEScanningMode::Active);
 
         // Set up advertisement received handler
-        g_watcher->Received([](BluetoothLEAdvertisementWatcher const& watcher,
+        g_watcher.Received([](BluetoothLEAdvertisementWatcher const& watcher,
                               BluetoothLEAdvertisementReceivedEventArgs const& args) {
             try {
                 // Get device info
@@ -217,7 +217,7 @@ int winrt_start_scan(int durationMs, int nioxOnly, DeviceFoundCallback callback,
         });
 
         // Start watching
-        g_watcher->Start();
+        g_watcher.Start();
 
         // Wait for scan duration in a separate thread
         std::thread([durationMs]() {
@@ -228,7 +228,7 @@ int winrt_start_scan(int durationMs, int nioxOnly, DeviceFoundCallback callback,
         return 0;
     }
     catch (...) {
-        g_watcher.reset();
+        g_watcher = nullptr;
         return -1;
     }
 }
@@ -237,10 +237,10 @@ int winrt_start_scan(int durationMs, int nioxOnly, DeviceFoundCallback callback,
 void winrt_stop_scan() {
     if (g_watcher) {
         try {
-            g_watcher->Stop();
+            g_watcher.Stop();
         }
         catch (...) {}
-        g_watcher.reset();
+        g_watcher = nullptr;
     }
 }
 
